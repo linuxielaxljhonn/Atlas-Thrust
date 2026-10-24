@@ -1,0 +1,1232 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17212B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Atlas Thrust">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Atlas Thrust y TECAR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap">
+</head>
+<body>
+<style>
+/* Layout: barra de vistas fija arriba, contenido en una columna ancha con paneles; ficha clínica como unidad. */
+:root{
+  --bg:#F1F4F3; --surface:#FFFFFF; --sunk:#E7ECEA; --ink:#17212B; --muted:#56636E; --line:#D3DBD8;
+  --accent:#2445C4; --accent-soft:#E3E8FB; --heat:#B9581A; --heat-soft:#FBEADC;
+  --ok:#24804F; --ok-soft:#DDF1E5; --warn:#9A7400; --warn-soft:#F8EDC9; --bad:#B8322A; --bad-soft:#F8DEDB;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E141A; --surface:#172029; --sunk:#111920; --ink:#E5EBEE; --muted:#93A1AB; --line:#283540;
+  --accent:#8199FF; --accent-soft:#1D2A55; --heat:#F08B45; --heat-soft:#3A2414;
+  --ok:#55C487; --ok-soft:#163626; --warn:#E3BC45; --warn-soft:#3A3013; --bad:#F06C5E; --bad-soft:#3E1C19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141A; --surface:#172029; --sunk:#111920; --ink:#E5EBEE; --muted:#93A1AB; --line:#283540;
+  --accent:#8199FF; --accent-soft:#1D2A55; --heat:#F08B45; --heat-soft:#3A2414;
+  --ok:#55C487; --ok-soft:#163626; --warn:#E3BC45; --warn-soft:#3A3013; --bad:#F06C5E; --bad-soft:#3E1C19; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--f-display);font-stretch:78%;font-weight:800;font-size:1.35rem;letter-spacing:.01em;line-height:1;display:flex;align-items:baseline;gap:8px}
+.brand small{font:500 .7rem/1 var(--f-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+nav.views{display:flex;gap:4px;overflow-x:auto;margin-left:auto;scrollbar-width:none;max-width:100%}
+nav.views button{border:0;background:none;padding:8px 12px;border-radius:6px;font-weight:600;font-size:.95rem;white-space:nowrap;color:var(--muted);cursor:pointer}
+nav.views button[aria-current="true"]{background:var(--ink);color:var(--surface)}
+nav.views button.heat[aria-current="true"]{background:var(--heat);color:#fff}
+main{padding-block:24px 64px}
+h1,h2,h3{font-family:var(--f-display);font-stretch:85%;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.9rem,4vw,2.8rem);font-weight:800}
+h2{font-size:1.5rem;font-weight:750}
+h3{font-size:1.12rem;font-weight:700;font-stretch:92%}
+.lede{color:var(--muted);max-width:68ch;margin:8px 0 0}
+.eyebrow{font:500 .72rem/1 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:.85em}
+.view{display:grid;gap:24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:24px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+/* mapa */
+.bodymap{display:flex;gap:8px;justify-content:center}
+.bodymap svg{width:50%;max-width:220px;height:auto}
+.bodymap .sil{fill:var(--sunk);stroke:var(--line);stroke-width:1.5}
+.zone{fill:var(--accent);fill-opacity:.14;stroke:var(--accent);stroke-width:1.5;cursor:pointer;transition:fill-opacity .15s}
+.zone:hover,.zone:focus{fill-opacity:.35;outline:none}
+.zone.on{fill-opacity:.6}
+.bodymap text{font:600 9px var(--f-body);fill:var(--muted);text-anchor:middle}
+.zonelist{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:center}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:.9rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip .n{font-family:var(--f-mono);font-size:.75em;opacity:.7;margin-left:4px}
+.freq{font-size:.8rem;color:var(--muted);margin-top:4px;text-align:center}
+/* tabs ficha */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:14px 0 16px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:9px 12px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button.heat[aria-selected="true"]{border-bottom-color:var(--heat)}
+.test{border-top:1px solid var(--line);padding:12px 0;display:grid;gap:4px}
+.test:first-child{border-top:0;padding-top:0}
+.test h4{margin:0;font-size:1rem}
+.test p{margin:0;font-size:.95rem}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.92rem}
+.kv dt{color:var(--muted);font-weight:600}
+.kv dd{margin:0}
+.tag{display:inline-block;font:500 .7rem/1.6 var(--f-mono);padding:0 7px;border-radius:4px;background:var(--sunk);color:var(--muted);letter-spacing:.03em}
+/* técnicas */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.tcard .pic{background:var(--sunk);border-bottom:1px solid var(--line)}
+.tcard .pic svg{display:block;width:100%;height:auto}
+.tcard .body{padding:14px 16px;display:grid;gap:8px;flex:1;align-content:start}
+.tcard .meta{display:flex;flex-wrap:wrap;gap:4px}
+.tcard details summary{cursor:pointer;font-weight:600;font-size:.92rem;color:var(--accent)}
+.tcard ol,.tcard ul{margin:6px 0 0;padding-left:20px;font-size:.92rem}
+.tcard .foot{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--line);align-items:center}
+.btnlink{font-size:.85rem;font-weight:600;text-decoration:none;border:1px solid var(--line);padding:5px 10px;border-radius:6px;display:inline-flex;gap:6px;align-items:center}
+.btnlink:hover{border-color:var(--accent)}
+.fav{margin-left:auto;border:0;background:none;cursor:pointer;font-size:1.15rem;color:var(--muted);padding:2px 6px}
+.fav[aria-pressed="true"]{color:var(--warn)}
+.pic svg .fig{fill:var(--muted);fill-opacity:.55}
+.pic svg .table{stroke:var(--muted);stroke-width:3;stroke-linecap:round}
+.pic svg .tgt{fill:var(--accent)}
+.pic svg .vec{stroke:var(--accent);stroke-width:3;fill:none;stroke-linecap:round}
+.pic svg .vech{fill:var(--accent)}
+.pic svg text{font:500 10px var(--f-mono);fill:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.filters label{display:grid;gap:3px;font-size:.8rem;color:var(--muted);font-weight:600}
+.filters select,.filters input{font:inherit;font-size:.95rem;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0}
+.filters input{width:min(260px,100%)}
+.count{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+/* niveles */
+.lvl{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:.85rem;padding:3px 10px;border-radius:999px}
+.lvl::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.lvl.leve{background:var(--ok-soft);color:var(--ok)}
+.lvl.moderado{background:var(--warn-soft);color:var(--warn)}
+.lvl.grave{background:var(--bad-soft);color:var(--bad)}
+.levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.levels{grid-template-columns:minmax(0,1fr)}}
+.levels > div{border:1px solid var(--line);border-radius:8px;padding:14px;background:var(--surface);border-top:4px solid var(--c)}
+.levels p{margin:6px 0 0;font-size:.92rem}
+/* síntoma */
+.step{display:grid;gap:10px}
+.step + .step{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}
+.step .eyebrow b{color:var(--ink)}
+.checks{display:grid;gap:6px}
+.checks label{display:flex;gap:10px;align-items:flex-start;font-size:.95rem;cursor:pointer}
+.checks input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.result{position:sticky;top:calc(env(safe-area-inset-top,0px) + 76px)}
+@media (max-width:860px){.result{position:static}}
+.verdict{border-radius:10px;padding:16px;margin-bottom:14px}
+.verdict.leve{background:var(--ok-soft)} .verdict.moderado{background:var(--warn-soft)} .verdict.grave{background:var(--bad-soft)}
+.verdict h3{margin-top:6px}
+.verdict p{margin:6px 0 0;font-size:.95rem}
+.minilist{margin:6px 0 0;padding-left:18px;font-size:.93rem}
+.minilist li{margin:2px 0}
+.linkbtn{border:0;background:none;color:var(--accent);padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;font-weight:600;text-align:left}
+/* tecar */
+.heatbox{border:1px solid var(--line);border-left:4px solid var(--heat);border-radius:8px;padding:14px 16px;background:var(--surface);display:grid;gap:8px}
+.heatbox h4{margin:0;font-family:var(--f-display);font-stretch:90%;font-size:1.05rem}
+.seq{display:grid;gap:6px;margin:0;padding:0;list-style:none;counter-reset:s}
+.seq li{display:grid;grid-template-columns:auto auto 1fr;gap:10px;align-items:baseline;font-size:.93rem;counter-increment:s}
+.seq li::before{content:counter(s);font:500 .75rem var(--f-mono);color:var(--heat);border:1px solid var(--heat);border-radius:50%;width:20px;height:20px;display:grid;place-items:center}
+.seq .mode{font:500 .75rem/1.6 var(--f-mono);background:var(--heat-soft);color:var(--heat);padding:0 7px;border-radius:4px;white-space:nowrap}
+.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.spec div{background:var(--sunk);border-radius:8px;padding:12px}
+.spec b{display:block;font:500 1.05rem var(--f-mono);color:var(--heat)}
+.spec span{font-size:.85rem;color:var(--muted)}
+.evi{display:grid;gap:10px}
+.evi article{border:1px solid var(--line);border-radius:8px;padding:12px 14px;background:var(--surface);display:grid;gap:4px}
+.evi article p{margin:0;font-size:.93rem}
+.grade{font:500 .7rem/1.6 var(--f-mono);padding:0 7px;border-radius:4px;justify-self:start}
+.grade.b{background:var(--ok-soft);color:var(--ok)} .grade.c{background:var(--warn-soft);color:var(--warn)} .grade.d{background:var(--sunk);color:var(--muted)}
+textarea{width:100%;min-height:90px;font:inherit;font-size:.93rem;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);resize:vertical}
+.note{font-size:.85rem;color:var(--muted)}
+.warnbar{display:flex;gap:10px;align-items:flex-start;background:var(--bad-soft);color:var(--ink);border-radius:8px;padding:10px 14px;font-size:.93rem}
+.warnbar b{color:var(--bad)}
+.cols{columns:2 300px;column-gap:28px}
+.cols > div{break-inside:avoid;margin-bottom:16px}
+.cols ul{margin:6px 0 0;padding-left:18px;font-size:.93rem}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}
+.gallery figure{margin:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--sunk);display:flex;flex-direction:column}
+.gallery img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;cursor:zoom-in}
+.gallery figcaption{font-size:.82rem;padding:6px 8px;display:flex;gap:6px;align-items:flex-start;justify-content:space-between}
+.gallery figcaption span{min-width:0;overflow-wrap:anywhere}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:.78rem;padding:2px 7px;cursor:pointer;white-space:nowrap}
+.mini.danger{color:var(--bad);border-color:var(--bad)}
+.uploader{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.uploader input[type=text]{flex:1 1 180px;min-width:0}
+.btn{border:0;background:var(--ink);color:var(--surface);border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.heat{background:var(--heat);color:#fff}
+.field{display:grid;gap:3px;font-size:.8rem;color:var(--muted);font-weight:600}
+.field input,.field select,.field textarea,.uploader input{font:inherit;font-size:.95rem;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0;width:100%}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20;display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:85vh;border-radius:6px}
+.lightbox p{color:#fff;text-align:center;margin:8px 0 0}
+.organ{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--surface);display:grid;gap:6px}
+.organ h3{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.organs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.okbar{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:8px;padding:10px 14px;font-size:.93rem}
+.course{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:3px}
+.course:first-child{border-top:0}
+.course .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.status{font-size:.82rem;color:var(--muted)}
+footer{color:var(--muted);font-size:.85rem;padding-block:24px;border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Atlas Thrust <span style="color:var(--heat)">+ TECAR</span> <small>Osteopatía · terapia manual</small></div>
+    <nav class="views" aria-label="Vistas">
+      <button data-view="mapa">Mapa corporal</button>
+      <button data-view="sintoma">Por síntoma</button>
+      <button data-view="tecnicas">Técnicas</button>
+      <button data-view="tecar" class="heat">Tecarterapia</button>
+      <button data-view="visceral">Visceral</button>
+      <button data-view="infantil">Infantil</button>
+      <button data-view="formacion">Formación</button>
+      <button data-view="cribado">Cribado</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- MAPA -->
+<section class="view" id="v-mapa">
+  <div>
+    <span class="eyebrow">Consulta rápida en camilla</span>
+    <h1>Toca la zona del paciente</h1>
+    <p class="lede">Cada región reúne los tests de evaluación, las técnicas thrust con sus variantes, las banderas rojas y el protocolo Winback TECAR orientativo para esa zona.</p>
+  </div>
+  <div class="grid2">
+    <div class="panel">
+      <div class="bodymap" id="bodymap"></div>
+      <div class="freq">Vista anterior · Vista posterior</div>
+      <div class="zonelist" id="zonelist"></div>
+    </div>
+    <div class="panel" id="ficha"></div>
+  </div>
+</section>
+
+<!-- SINTOMA -->
+<section class="view" id="v-sintoma" hidden>
+  <div>
+    <span class="eyebrow">Razonamiento clínico</span>
+    <h1>¿Qué le pasa al paciente?</h1>
+    <p class="lede">Marca la zona, el patrón de síntomas, las banderas rojas presentes y la irritabilidad. El resultado indica el nivel de gravedad, qué evaluar, qué técnicas aplicar y el protocolo TECAR adecuado.</p>
+  </div>
+  <div class="levels">
+    <div style="--c:var(--ok)"><span class="lvl leve">Leve</span><p>Dolor mecánico no irritable, agudo reciente o crónico estable. Thrust indicado tras cribado.</p></div>
+    <div style="--c:var(--warn)"><span class="lvl moderado">Moderado</span><p>Alta irritabilidad o signos neurológicos sin progresión. Sin thrust en el segmento: movilización, tejidos blandos y TECAR analgésico.</p></div>
+    <div style="--c:var(--bad)"><span class="lvl grave">Grave</span><p>Bandera roja presente. No manipular ni aplicar TECAR. Derivar según la urgencia indicada.</p></div>
+  </div>
+  <div class="grid2">
+    <div class="panel" id="sym-form"></div>
+    <div class="result" id="sym-result"></div>
+  </div>
+</section>
+
+<!-- TECNICAS -->
+<section class="view" id="v-tecnicas" hidden>
+  <div>
+    <span class="eyebrow">Diccionario</span>
+    <h1>Técnicas thrust y variantes</h1>
+    <p class="lede">Cada tarjeta muestra la posición del paciente y el vector del impulso. Los botones de vídeo abren una búsqueda en YouTube con el nombre exacto de la técnica, para que siempre encuentres demostraciones actuales.</p>
+  </div>
+  <div class="panel filters">
+    <label for="f-q">Buscar<input id="f-q" type="search" placeholder="lumbar roll, costilla, Chicago…"></label>
+    <label for="f-reg">Región<select id="f-reg"></select></label>
+    <label for="f-pos">Posición<select id="f-pos"></select></label>
+    <label for="f-pat">Patología<select id="f-pat"></select></label>
+    <label for="f-fav" style="display:flex;gap:6px;align-items:center;font-size:.9rem"><input id="f-fav" type="checkbox"> Solo favoritas</label>
+    <span class="count" id="f-count"></span>
+  </div>
+  <div class="cards" id="cards"></div>
+</section>
+
+<!-- TECAR -->
+<section class="view" id="v-tecar" hidden>
+  <div>
+    <span class="eyebrow" style="color:var(--heat)">Winback Back4</span>
+    <h1>Tecarterapia combinada con thrust</h1>
+    <p class="lede">Protocolos por región y nivel de gravedad basados en los protocolos Back4 de Winback Academy, con los pasos, intensidades y tiempos de la Academy y el momento en que encaja tu técnica manual. Cada protocolo enlaza a su página original en la Academy.</p>
+    <p style="margin-top:12px"><a class="btn heat" style="text-decoration:none;display:inline-block" href="https://winback-academy.org/es/" target="_blank" rel="noopener">Abrir Winback Academy</a></p>
+    <p class="note">La primera vez, inicia sesión marcando "Recordarme" y deja que el navegador guarde la contraseña. Después la Academy se abrirá con tu sesión iniciada.</p>
+  </div>
+  <div class="panel">
+    <h2>Cómo se dosifica en el Back4</h2>
+    <p class="note">La Academy no dosifica por frecuencia sino por <b>intensidad en %</b> hasta la sensación térmica buscada. Cada protocolo indica el porcentaje de CET y RET de cada paso y la duración en minutos.</p>
+    <div class="spec" style="margin-top:12px">
+      <div><b style="color:var(--accent)">Atermia</b><span>Sin calor percibido. Fase aguda e inflamatoria, edema.</span></div>
+      <div><b>Calor suave</b><span>Diatermia ligera. Subagudo, analgesia, drenaje.</span></div>
+      <div><b>Calor fuerte</b><span>Vascularización y relajación de contracturas. Crónico.</span></div>
+      <div><b style="color:var(--bad)">Hipertermia</b><span>Fibrosis y cápsula retraída. Solo en crónico sin inflamación.</span></div>
+      <div><b>Hi-TENS 2 / 5 / 25 Hz</b><span>Se elige según la comodidad del paciente. Combinable con RET.</span></div>
+      <div><b>Hi-EMS</b><span>Programas Focal, Radial, Dynamic, Pushback y Rehab+, con contracción eficaz e indolora.</span></div>
+    </div>
+    <p class="note" style="margin-top:10px">Electrodos: CET (capacitivo, aislado) y RET (resistivo). "Body Zones" es el número de zonas encadenadas; "Delta" y "Triangulación" son colocaciones del segundo electrodo para concentrar la corriente en un punto. Las pulseras en los antebrazos del terapeuta permiten aplicar RET durante la técnica manual. Equipo: TECAR a 300, 500 y 1000 kHz, Hi-TENS a 2, 5 y 25 Hz, Hi-EMS a 1500 y 4000 Hz.</p>
+  </div>
+  <div class="panel">
+    <h2>Dónde encaja en la sesión</h2>
+    <div class="levels" style="margin-top:12px">
+      <div style="--c:var(--ok)"><span class="lvl leve">Leve</span><p><b>Antes del thrust:</b> CET y RET térmico para bajar el tono y aumentar la extensibilidad. <b>Después:</b> Hi-EMS sobre estabilizadores para fijar el resultado.</p></div>
+      <div style="--c:var(--warn)"><span class="lvl moderado">Moderado</span><p><b>En lugar del thrust:</b> Hi-TENS y RET atérmico o microtérmico para modular el dolor, más movilización grado I–III.</p></div>
+      <div style="--c:var(--bad)"><span class="lvl grave">Grave</span><p><b>No aplicar</b> hasta descartar la causa. TECAR no sustituye a la derivación.</p></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Protocolo por región</h2>
+    <div class="zonelist" id="tecar-zones" style="justify-content:flex-start"></div>
+    <div id="tecar-detail" style="margin-top:16px"></div>
+  </div>
+  <div class="panel">
+    <h2>Biblioteca de protocolos Academy</h2>
+    <p class="note">Protocolos por tipo de tejido y patología, aplicables a cualquier zona. Los marcados como Back4 son específicos de tu equipo; el resto son protocolos generales de la Academy adaptables.</p>
+    <div class="organs" id="protolib" style="margin-top:12px"></div>
+  </div>
+  <div class="panel">
+    <h2>Qué dice la evidencia</h2>
+    <p class="note">Resumen de los estudios localizados. La evidencia sobre TECAR es prometedora pero de calidad baja a moderada; úsala como complemento del tratamiento manual y del ejercicio, no como tratamiento único.</p>
+    <div class="evi" id="evi" style="margin-top:12px"></div>
+  </div>
+  <div class="panel">
+    <h2>Contraindicaciones TECAR</h2>
+    <div class="cols" style="margin-top:8px">
+      <div><h3>Absolutas</h3><ul><li>Marcapasos, desfibrilador u otro dispositivo electrónico implantado</li><li>Embarazo (zona abdominal, lumbar y pélvica)</li><li>Tumor o metástasis activa en la zona</li><li>Trombosis venosa profunda o tromboflebitis</li><li>Fiebre o infección local</li></ul></div>
+      <div><h3>Relativas</h3><ul><li>Implantes metálicos en el trayecto de la corriente (evitar RET térmico)</li><li>Alteración de la sensibilidad térmica (neuropatía, diabetes)</li><li>Heridas abiertas o piel lesionada</li><li>Hemorragia reciente o anticoagulación (evitar efecto térmico)</li><li>Fase inflamatoria aguda: solo modo atérmico</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- VISCERAL -->
+<section class="view" id="v-visceral" hidden>
+  <div>
+    <span class="eyebrow">Osteopatía visceral</span>
+    <h1>Vísceras y su relación con el dolor musculoesquelético</h1>
+    <p class="lede">Técnicas suaves de movilización visceral, sin thrust. Úsalas cuando el dolor musculoesquelético tiene un componente visceral posible y siempre después de descartar patología orgánica.</p>
+  </div>
+  <div class="warnbar"><b>Evidencia limitada:</b> la investigación sobre osteopatía visceral es escasa y de baja calidad. Preséntala al paciente como complemento, nunca como tratamiento de una enfermedad orgánica.</div>
+  <div class="panel">
+    <h2>Banderas rojas abdominales</h2>
+    <p class="note">Cualquiera de estas detiene el tratamiento y requiere derivación, urgente si hay dolor agudo intenso.</p>
+    <div class="cols" id="visc-red" style="margin-top:10px"></div>
+  </div>
+  <div class="panel">
+    <h2>Evaluación</h2>
+    <div id="visc-eval" style="margin-top:8px"></div>
+  </div>
+  <div class="panel">
+    <h2>Técnicas por órgano</h2>
+    <div class="organs" id="visc-org" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<!-- INFANTIL -->
+<section class="view" id="v-infantil" hidden>
+  <div>
+    <span class="eyebrow">Osteopatía pediátrica</span>
+    <h1>Lactantes y niños</h1>
+    <p class="lede">Abordaje suave, sin técnicas de thrust, siempre en coordinación con el pediatra y con los padres presentes.</p>
+  </div>
+  <div class="okbar"><b>Sin thrust.</b> En pediatría solo se usan técnicas de muy baja fuerza: miofasciales, craneales suaves, movilización pasiva lenta y educación a la familia. No se aplica TECAR en lactantes.</div>
+  <div class="panel">
+    <h2>Banderas rojas pediátricas</h2>
+    <div class="cols" id="inf-red" style="margin-top:10px"></div>
+  </div>
+  <div class="panel">
+    <h2>Evaluación</h2>
+    <div id="inf-eval" style="margin-top:8px"></div>
+  </div>
+  <div class="panel">
+    <h2>Motivos de consulta frecuentes</h2>
+    <div class="organs" id="inf-cases" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<!-- FORMACION -->
+<section class="view" id="v-formacion" hidden>
+  <div>
+    <span class="eyebrow">Formación</span>
+    <h1>Mi formación</h1>
+    <p class="lede">Reúne aquí tus cursos, apuntes, guías, artículos y vídeos, organizados por área. Puedes adjuntar PDF o imágenes y enlazar a las plataformas donde estudias.</p>
+  </div>
+  <div class="panel">
+    <h2>Añadir recurso</h2>
+    <form id="fo-form" class="formgrid" style="margin-top:12px">
+      <label class="field" for="fo-titulo">Título<input id="fo-titulo" required placeholder="Curso HVLA columna cervical"></label>
+      <label class="field" for="fo-cat">Área<select id="fo-cat"></select></label>
+      <label class="field" for="fo-tipo">Tipo<select id="fo-tipo"></select></label>
+      <label class="field" for="fo-link">Enlace<input id="fo-link" type="url" placeholder="https://…"></label>
+      <label class="field" for="fo-file">Documento adjunto (PDF o imagen)<input id="fo-file" type="file" accept="application/pdf,image/*"></label>
+      <label class="field" for="fo-notas" style="grid-column:1/-1">Notas<textarea id="fo-notas" placeholder="Fechas, docente, horas, puntos clave…"></textarea></label>
+      <div style="grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="fo-save" type="submit">Guardar recurso</button><span class="status" id="fo-status"></span></div>
+    </form>
+  </div>
+  <div class="panel filters">
+    <label for="fo-q">Buscar<input id="fo-q" type="search" placeholder="Título o notas"></label>
+    <label for="fo-fcat">Área<select id="fo-fcat"></select></label>
+    <span class="count" id="fo-count"></span>
+  </div>
+  <div id="fo-list" class="view"></div>
+  <div class="panel">
+    <h2>Copia de seguridad</h2>
+    <p class="note">Tus imágenes, documentos, recursos de formación, notas y favoritas se guardan en este dispositivo. Exporta una copia de vez en cuando y úsala para pasar tus datos a otro dispositivo.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:end">
+      <button class="btn" id="bk-export" type="button">Exportar copia</button>
+      <label class="field" for="bk-import">Importar copia (.json)<input id="bk-import" type="file" accept="application/json,.json"></label>
+    </div>
+    <p class="status" id="bk-status"></p>
+  </div>
+  <div class="panel">
+    <h2>Recursos de referencia</h2>
+    <ul class="minilist" id="fo-ref"></ul>
+  </div>
+</section>
+
+<!-- CRIBADO -->
+<section class="view" id="v-cribado" hidden>
+  <div>
+    <span class="eyebrow">Antes de manipular</span>
+    <h1>Cribado y banderas rojas</h1>
+    <p class="lede">Lista de comprobación previa a cualquier técnica de alta velocidad y baja amplitud. Basada en el marco IFOMPT 2020 para la región cervical y en las guías europeas de dolor lumbar y cervical.</p>
+  </div>
+  <div class="warnbar"><b>Regla de oro:</b> ante la duda, no manipular. Una bandera roja positiva detiene el thrust y el TECAR hasta que la causa esté aclarada.</div>
+  <div class="panel">
+    <h2>Banderas rojas generales</h2>
+    <div class="cols" id="redflags" style="margin-top:10px"></div>
+  </div>
+  <div class="panel">
+    <h2>Riesgo vascular cervical (IFOMPT)</h2>
+    <p class="lede" style="margin-top:4px">El marco IFOMPT recomienda razonamiento clínico centrado en la historia, por encima de los tests de provocación vascular, que tienen baja validez. Busca signos de disfunción de arteria cervical antes de cualquier thrust en el cuello.</p>
+    <div class="cols" style="margin-top:12px">
+      <div><h3>Las 5 D y 3 N</h3><ul><li>Dizziness: mareo, vértigo</li><li>Diplopía u otras alteraciones visuales</li><li>Disartria: dificultad para articular</li><li>Disfagia: dificultad para tragar</li><li>Drop attacks: caídas súbitas</li><li>Náuseas</li><li>Nistagmo</li><li>Numbness: entumecimiento facial o perioral</li></ul></div>
+      <div><h3>Otras señales de alarma</h3><ul><li>Cefalea o cervicalgia súbita e intensa, distinta a lo habitual ("la peor de su vida")</li><li>Traumatismo cervical reciente, incluso menor</li><li>Síndrome de Horner: ptosis, miosis</li><li>Factores de riesgo cardiovascular, enfermedad del tejido conectivo, migraña con aura</li><li>Signos de neurona motora superior: Hoffmann, Babinski, clonus, alteración de la marcha</li></ul></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Protocolo previo al thrust</h2>
+    <ul class="minilist" style="font-size:1rem;columns:2 280px">
+      <li>Historia clínica completa y descarte de banderas rojas</li>
+      <li>Exploración neurológica si hay dolor irradiado: dermatomas, miotomas y reflejos</li>
+      <li>Consentimiento informado verbal explicando beneficios, riesgos y alternativas</li>
+      <li>Posicionamiento previo: el paciente tolera la posición premanipulativa sin síntomas</li>
+      <li>Barrera bien localizada: tensión mínima en el segmento antes del impulso</li>
+      <li>Si aparecen síntomas durante el posicionamiento, se suspende el thrust</li>
+      <li>Reevaluación inmediata con el test o signo comparable</li>
+      <li>Registrar técnica, segmento, respuesta y consentimiento en la historia</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <div>Herramienta de apoyo para profesionales sanitarios cualificados en terapia manual. No sustituye la formación práctica supervisada ni el juicio clínico. Autor: Jhonn V. Ardila Jara.</div>
+</footer>
+</main>
+
+<script>
+/* ======================= DATOS ======================= */
+const yt = q => "https://www.youtube.com/results?search_query=" + encodeURIComponent(q);
+const pm = q => "https://pubmed.ncbi.nlm.nih.gov/?term=" + encodeURIComponent(q);
+
+const REGIONS = {
+ cervical:{name:"Cervical", freq:"Muy frecuente", y:.13,
+  tests:[
+   {n:"Test de Spurling",o:"Radiculopatía cervical",p:"Sedestación. Extensión, lateroflexión y rotación hacia el lado sintomático con compresión axial suave.",r:"Reproduce dolor irradiado al brazo. Específico: si es positivo, aumenta mucho la probabilidad de radiculopatía."},
+   {n:"Test de distracción cervical",o:"Radiculopatía cervical",p:"Supino. Tracción axial suave sujetando occipital y mentón.",r:"Alivio del dolor irradiado. Útil junto a Spurling y ULTT."},
+   {n:"ULTT A (ULNT1, nervio mediano)",o:"Sensibilidad neural",p:"Supino. Depresión escapular, abducción de hombro, supinación, extensión de muñeca y dedos, extensión de codo y lateroflexión cervical contralateral.",r:"Reproduce síntomas y cambia con la diferenciación estructural. Alta sensibilidad: si es negativo, ayuda a descartar radiculopatía."},
+   {n:"Test de flexión-rotación",o:"Disfunción C1-C2, cefalea cervicogénica",p:"Supino. Flexión cervical máxima y rotación pasiva a cada lado.",r:"Rotación reducida claramente respecto al otro lado o al rango esperado."},
+   {n:"Regla canadiense de columna cervical",o:"Necesidad de radiografía tras traumatismo",p:"Valorar factores de alto riesgo (edad ≥65, mecanismo peligroso, parestesias), factores de bajo riesgo y capacidad de rotar 45° a cada lado.",r:"Si no se cumple, derivar para imagen antes de cualquier tratamiento."},
+   {n:"Test de Sharp-Purser",o:"Inestabilidad atlantoaxial",p:"Sedestación con ligera flexión. Estabiliza C2 y desliza la cabeza hacia posterior con suavidad.",r:"Reducción de síntomas o 'clunk'. Positivo contraindica el thrust. Sospecha en artritis reumatoide, Down o traumatismo."}],
+  red:["Signos de las 5 D y 3 N","Traumatismo reciente sin descartar fractura","Signos de mielopatía: torpeza manual, alteración de la marcha, Hoffmann positivo","Artritis reumatoide o síndrome de Down sin estudio de estabilidad","Cefalea súbita e intensa distinta a la habitual"],
+  alt:["Movilización PA unilateral grado III–IV","SNAG de Mulligan","Técnica de energía muscular","Inhibición suboccipital y tejidos blandos","Thrust torácico (beneficio cervical sin manipular el cuello)"],
+  tecar:{"placa": "Neutro adhesivo en la zona interescapular.", "src": [["Dolor de cuello subagudo (Back4)", "dolor-de-cuello-subagudo"], ["Cervicalgia subaguda", "cervicalgia-subaguda"]], "leve": [["CET + CET", "CET 40%", "5′", "Masaje de las zonas escapular y cervical (2 Body Zones)"], ["RET + CET", "RET 30% · CET 30% · Hi-TENS 2/5/25 · Hi-EMS sin dolor", "3′", "Contracturas cervicodorsales, calor suave, 3 zonas encadenadas"], ["Pulseras", "RET 20%", "5′", "Tracciones y movilizaciones cervicales con diatermia suave: aquí encaja tu thrust o la técnica manual"]], "moderado": [["CET", "CET bajo · atermia", "5′", "Masaje periférico sin calor percibido"], ["RET", "RET bajo · Hi-TENS 2/5/25", "3′", "Analgesia en la zona dolorosa, sin calor"], ["Pulseras", "RET bajo", "5′", "Movilización suave grado I–III, sin thrust"]], "pauta": "El protocolo de la Academy está pensado para dolor subagudo. En fase aguda baja a atermia. Termina con un retorno a la calma en CET suave para evitar el efecto rebote."},
+  sym:[
+   {id:"c-local",n:"Dolor cervical mecánico local",tests:["Test de flexión-rotación","Test de distracción cervical"],tech:["c-rot","c-lat","ct-prono","t-supino"],note:"Combinar thrust torácico con cervical da mejores resultados que tratar solo el cuello en dolor cervical mecánico."},
+   {id:"c-rad",n:"Dolor irradiado al brazo",tests:["Test de Spurling","Test de distracción cervical","ULTT A (ULNT1, nervio mediano)"],tech:["t-supino","t-prono"],neuro:true,note:"Con radiculopatía confirmada, evita el thrust en el segmento afectado. El thrust torácico y la movilización cervical son opciones más seguras."},
+   {id:"c-cef",n:"Cefalea cervicogénica",tests:["Test de flexión-rotación"],tech:["c-c0c1","c-lat"],note:"Confirma que no es una cefalea con rasgos de alarma antes de tratar la región suboccipital."},
+   {id:"c-tort",n:"Tortícolis aguda o bloqueo",tests:["Test de flexión-rotación"],tech:["c-lat","t-supino","ct-prono"],note:"Empieza por técnicas de lateroflexión y por la región torácica, que el paciente tolera mejor en fase aguda."},
+   {id:"c-wad",n:"Tras traumatismo (latigazo)",tests:["Regla canadiense de columna cervical","Test de Sharp-Purser"],tech:["t-supino"],force:"moderado",note:"Tras un latigazo reciente, no hagas thrust cervical. Aplica la regla canadiense y trata con movilización suave y ejercicio."}]},
+ trapecio:{name:"Trapecios", freq:"Muy frecuente", y:.2,
+  tests:[
+   {n:"Palpación de puntos gatillo",o:"Dolor miofascial del trapecio superior",p:"Palpación en pinza del vientre muscular buscando banda tensa.",r:"Nódulo sensible que reproduce el dolor referido conocido por el paciente."},
+   {n:"Test de longitud del trapecio superior y elevador",o:"Acortamiento muscular",p:"Supino. Flexión, lateroflexión contralateral y rotación (homolateral para elevador, contralateral para trapecio) con depresión escapular.",r:"Rango reducido respecto al lado contrario o tensión dolorosa."},
+   {n:"Test CRLF (rotación-lateroflexión cervical)",o:"Hipomovilidad de la 1ª costilla",p:"Sedestación. Rotación cervical máxima alejándose del lado a valorar y después flexión lateral hacia el pecho.",r:"Lateroflexión bloqueada en comparación con el otro lado."},
+   {n:"Test de Roos (EAST)",o:"Síndrome del desfiladero torácico",p:"Brazos en abducción de 90° y rotación externa, abriendo y cerrando las manos durante 3 minutos.",r:"Reproduce parestesias, pesadez o palidez. Alta tasa de falsos positivos: valóralo con la historia."}],
+  red:["Dolor de hombro izquierdo o trapecio con disnea, sudoración o esfuerzo (descartar origen cardíaco)","Dolor referido de víscera abdominal (vesícula, diafragma) en hombro derecho","Masa palpable o adenopatía supraclavicular","Signos vasculares en el brazo: palidez, frialdad, edema"],
+  alt:["Inhibición y presión isquémica de puntos gatillo","Técnica de energía muscular del trapecio y elevador","Movilización de la 1ª costilla","Punción seca (si tienes formación)"],
+  tecar:{"placa": "Neutro fijo; segundo electrodo RET móvil para triangular sobre la contractura.", "src": [["Contracturas profundas (Back4)", "contracturas-profundas"], ["Síndrome miofascial", "sindrome-miofascial"]], "leve": [["RET + RET", "RET 60% · Hi-TENS 2-5-25 · Hi-EMS Focal 30%", "5′", "Busca el punto motor y triangula la señal sobre la contractura (3 Body Zone Delta)"], ["Thrust", "—", "—", "1ª costilla o charnela cervicotorácica"], ["CET", "CET suave", "2–3′", "Retorno a la calma sobre el trapecio"]], "moderado": [["CET", "CET suave · puntos fijos", "5′", "Puntos fijos sobre los puntos gatillo, sin calor fuerte"], ["MIX", "Mix suave", "3–5′", "Maniobras sobre el conjunto de la fascia"], ["Manual", "—", "—", "Tejidos blandos y estiramiento suave"]], "pauta": "Ajusta Hi-EMS hasta una contracción eficaz y Hi-TENS a la frecuencia que el paciente tolere mejor."},
+  sym:[
+   {id:"tr-tension",n:"Tensión y dolor miofascial",tests:["Palpación de puntos gatillo","Test de longitud del trapecio superior y elevador"],tech:["ct-prono","r1-sed"],note:"El thrust de la charnela cervicotorácica y de la 1ª costilla suele reducir el tono del trapecio superior."},
+   {id:"tr-cost",n:"Dolor en la base del cuello con rigidez",tests:["Test CRLF (rotación-lateroflexión cervical)"],tech:["r1-sed","r1-sup"],note:"Un test CRLF positivo orienta a una 1ª costilla elevada."},
+   {id:"tr-tos",n:"Parestesias en el brazo al elevarlo",tests:["Test de Roos (EAST)","ULTT A (ULNT1, nervio mediano)"],tech:["r1-sup"],neuro:true,note:"Diferencia entre desfiladero torácico y radiculopatía antes de manipular."}]},
+ hombro:{name:"Hombro", freq:"Muy frecuente", y:.22,
+  tests:[
+   {n:"Test de Neer",o:"Dolor subacromial",p:"Estabiliza la escápula y eleva pasivamente el brazo en rotación interna.",r:"Dolor anterolateral del hombro."},
+   {n:"Test de Hawkins-Kennedy",o:"Dolor subacromial",p:"Hombro y codo a 90° de flexión, rotación interna pasiva.",r:"Dolor subacromial. Combinado con arco doloroso y rotación externa resistida mejora el diagnóstico."},
+   {n:"Test de Jobe (Empty can)",o:"Supraespinoso",p:"Abducción de 90° en el plano escapular con rotación interna. Resistencia hacia abajo.",r:"Dolor o debilidad."},
+   {n:"Test de caída del brazo (Drop arm)",o:"Rotura masiva del manguito",p:"Bajar lentamente el brazo desde 90° de abducción.",r:"No puede controlar el descenso. Deriva para imagen."},
+   {n:"Test de aducción horizontal (Cross-body)",o:"Articulación acromioclavicular",p:"Aducción horizontal pasiva del brazo flexionado a 90°.",r:"Dolor localizado en la acromioclavicular."},
+   {n:"Test de aprensión y recolocación",o:"Inestabilidad anterior",p:"Supino. Abducción de 90° y rotación externa progresiva; después presión posterior sobre la cabeza humeral.",r:"Aprensión que se alivia con la recolocación. Positivo contraindica el thrust glenohumeral."}],
+  red:["Rotura traumática con pérdida de fuerza súbita","Dolor nocturno constante con pérdida de peso (tumor, Pancoast)","Dolor de hombro izquierdo con síntomas cardíacos","Hombro caliente y enrojecido con fiebre (artritis séptica)","Luxación reciente o inestabilidad"],
+  alt:["Movilizaciones glenohumerales de Kaltenborn y Maitland","Movilización con movimiento de Mulligan","Thrust cervicotorácico y torácico como abordaje regional","Ejercicio de control escapular y manguito"],
+  tecar:{"placa": "Neutro fijo en la zona cervicodorsal; electrodos RET a ambos lados del hombro.", "src": [["Capsulitis glenohumeral (Back4)", "capsulitis-glenohumeral"]], "leve": [["CET + CET", "CET 60%", "5′", "Masaje del manguito rotador, calor confortable (3 Body Zones)"], ["RET + RET", "RET 40% · Hi-TENS Dynamic · Hi-EMS Pushback 30%", "5′", "Liberar tensiones profundas del hombro"], ["Thrust", "—", "—", "Cervicotorácico, AC o glenohumeral según la evaluación"], ["RET + RET", "RET 50% · neutro móvil · Hi-TENS 2 Hz", "5′", "Sobre la cápsula: calor fuerte para vascularizar o hipertermia si hay fibrosis"]], "moderado": [["CET + CET", "CET 60% · calor confortable", "5′", "Masaje del manguito"], ["RET + RET", "RET 40% en baja térmica · Hi-TENS Dynamic", "5′", "Si hay inflamación, quédate en calor bajo"], ["Manual", "—", "—", "Movilización grado I–II, sin thrust glenohumeral"]], "pauta": "El protocolo de la Academy es para capsulitis. Para dolor subacromial usa los pasos 1 y 2 con calor confortable, y el paso 3 solo si hay rigidez capsular."},
+  sym:[
+   {id:"h-sub",n:"Dolor al elevar el brazo",tests:["Test de Neer","Test de Hawkins-Kennedy","Test de Jobe (Empty can)"],tech:["ct-prono","t-supino","gh-caudal"],note:"El thrust cervicotorácico y torácico mejora el dolor y la función a corto plazo en dolor de hombro."},
+   {id:"h-ac",n:"Dolor en la parte alta del hombro",tests:["Test de aducción horizontal (Cross-body)"],tech:["ac-sed","sc-sup"],note:"Diferencia la acromioclavicular del dolor referido cervical."},
+   {id:"h-rig",n:"Rigidez global (hombro congelado)",tests:["Test de caída del brazo (Drop arm)"],tech:["t-supino"],force:"moderado",note:"En capsulitis adhesiva, evita el thrust glenohumeral. Moviliza dentro de la tolerancia y usa TECAR para facilitar la ganancia de rango."},
+   {id:"h-trauma",n:"Tras caída o traumatismo",tests:["Test de caída del brazo (Drop arm)","Test de aprensión y recolocación"],tech:[],force:"grave",note:"Tras un traumatismo con pérdida de fuerza o deformidad, deriva para imagen."}]},
+ dorsal:{name:"Dorsal", freq:"Muy frecuente", y:.3,
+  tests:[
+   {n:"Test de muelleo PA segmentario",o:"Hipomovilidad y dolor segmentario",p:"Prono. Presión posteroanterior sobre cada apófisis espinosa y transversa.",r:"Rigidez o reproducción del dolor conocido."},
+   {n:"Rotación torácica en sedestación",o:"Movilidad torácica global",p:"Sentado con los brazos cruzados y la pelvis fija, rotación activa a cada lado.",r:"Asimetría o dolor."},
+   {n:"Compresión costal",o:"Fractura o disfunción costal",p:"Compresión anteroposterior y lateral de la caja torácica.",r:"Dolor localizado agudo. Si hay traumatismo, sospecha fractura."},
+   {n:"Percusión de apófisis espinosas",o:"Fractura, infección o tumor",p:"Percusión firme con martillo o con el dedo sobre cada apófisis.",r:"Dolor agudo y localizado: no manipular y derivar."}],
+  red:["Osteoporosis conocida o fractura vertebral previa","Dolor torácico no mecánico, nocturno, con pérdida de peso","Dolor con disnea, sudoración o irradiación al brazo izquierdo","Corticoides de larga duración","Dolor en banda con lesiones cutáneas (herpes zóster)"],
+  alt:["Movilización PA grado III–IV","Técnica de energía muscular torácica","Tejidos blandos paravertebrales","Ejercicio de movilidad en rotación y extensión"],
+  tecar:{"placa": "Neutro en el abdomen o el esternón, en la cara opuesta.", "src": [["Bisagra dorsal y lumbar", "bisagra-dorsal-y-lumbar"], ["Contracturas profundas (Back4)", "contracturas-profundas"]], "leve": [["CET", "CET suave", "5′", "Masaje de cuadrado lumbar, serratos y dorsal ancho"], ["RET", "RET suave · puntos fijos", "3′", "Trabajo en puntos fijos de las charnelas C7–D1 y D12–L1"], ["Thrust", "—", "—", "Técnica dorsal o costal seleccionada"], ["CET", "CET suave", "1–2′", "Retorno a la calma"]], "moderado": [["CET", "CET suave · atermia", "5′", "Masaje periférico"], ["RET", "RET bajo · Hi-TENS 2/5/25", "3′", "Analgesia sin calor"], ["Manual", "—", "—", "Movilización y tejidos blandos"]], "pauta": "La bisagra dorsal y lumbar es un protocolo de generaciones anteriores adaptado al Back4. Ajusta las intensidades a la sensación térmica indicada."},
+  sym:[
+   {id:"d-mec",n:"Dolor dorsal mecánico",tests:["Test de muelleo PA segmentario","Rotación torácica en sedestación"],tech:["t-supino","t-prono","t-sed"],note:"Respuesta habitualmente rápida a la manipulación."},
+   {id:"d-cost",n:"Dolor al respirar o en un punto costal",tests:["Compresión costal","Test de muelleo PA segmentario"],tech:["cost-sup","t-prono"],note:"Si el dolor costal aparece tras una caída o golpe, descarta fractura antes de manipular."},
+   {id:"d-ost",n:"Paciente con osteoporosis",tests:["Percusión de apófisis espinosas"],tech:[],force:"moderado",note:"Con osteoporosis, evita el thrust torácico. Usa movilización suave, tejidos blandos y TECAR."}]},
+ lumbar:{name:"Lumbar", freq:"Muy frecuente", y:.42,
+  tests:[
+   {n:"Elevación de pierna recta (SLR, Lasègue)",o:"Radiculopatía L4-S1",p:"Supino. Flexión pasiva de cadera con la rodilla extendida. Sensibilización con dorsiflexión.",r:"Dolor irradiado por debajo de la rodilla entre 30° y 70°. Alta sensibilidad."},
+   {n:"Test de Slump",o:"Sensibilidad neural",p:"Sedestación. Flexión torácica y lumbar, flexión cervical, extensión de rodilla y dorsiflexión. Liberación de la flexión cervical.",r:"Reproduce síntomas y cambia al liberar el cuello."},
+   {n:"Test de inestabilidad en prono",o:"Inestabilidad lumbar",p:"Tronco sobre la camilla y pies en el suelo. PA en el segmento doloroso; repetir con las piernas elevadas.",r:"Dolor que desaparece al activar la musculatura. Orienta a ejercicio de estabilización."},
+   {n:"Cluster de Laslett (sacroilíaca)",o:"Dolor sacroilíaco",p:"Distracción, compresión, thigh thrust, sacral thrust y Gaenslen.",r:"3 o más de 5 positivos sugieren origen sacroilíaco."},
+   {n:"Movimientos repetidos (McKenzie)",o:"Centralización del dolor",p:"Flexión o extensión repetida en bipedestación o en prono, 10 repeticiones.",r:"El dolor se centraliza (pronóstico favorable) o se periferiza."},
+   {n:"Regla de predicción para manipulación lumbar",o:"Probabilidad de respuesta rápida al thrust",p:"Valora 5 criterios: dolor de menos de 16 días, sin síntomas por debajo de la rodilla, FABQ-trabajo menor de 19, hipomovilidad lumbar y rotación interna de cadera mayor de 35°.",r:"4 o más criterios: alta probabilidad de mejora rápida con thrust sacroilíaco o lumbar."}],
+  red:["Síndrome de cola de caballo: anestesia en silla de montar, retención urinaria o incontinencia (urgencia)","Déficit neurológico progresivo","Antecedente de cáncer, pérdida de peso inexplicada","Fiebre, inmunosupresión, consumo de drogas por vía parenteral","Traumatismo importante u osteoporosis","Dolor no mecánico nocturno, rigidez matutina mayor de 30 min en menores de 40 años (espondiloartritis)","Embarazo (thrust lumbar contraindicado de forma relativa)"],
+  alt:["Movilización lumbar y sacroilíaca","Técnica de energía muscular de pelvis","Ejercicios de preferencia direccional (McKenzie)","Ejercicio de control motor"],
+  tecar:{"placa": "Neutro en el abdomen; en ciática, RET adhesivo en la zona lumbar y neutro en la pantorrilla. Contraindicado en el embarazo.", "src": [["Dolor de espalda (agudo y subagudo)", "dolor-de-espalda"], ["Ciática (Back4)", "ciatica"], ["Ciática aguda", "ciatica-aguda"]], "leve": [["CET Dynamic", "CET suave", "5′", "Masaje en la periferia del dolor"], ["RET", "RET suave", "3–5′", "Masaje muscular extendido; con pulseras, controla psoas y piramidal durante la movilización lumbar"], ["Thrust", "—", "—", "Lumbar roll o thrust sacroilíaco"], ["RET", "RET bajo", "2′", "Retorno a la temperatura fisiológica"]], "moderado": [["CET + CET", "CET 60%", "5′", "Masaje de la zona lumbar (protocolo Ciática Back4)"], ["RET + CET", "RET 40% · CET 60% · Hi-TENS Dynamic", "10′", "RET adhesivo lumbar, neutro en pantorrilla y CET a lo largo del nervio ciático, calor ligero"], ["Manual", "—", "—", "Movilización y ejercicio de preferencia direccional, sin thrust en el segmento"]], "pauta": "En lumbalgia aguda, objetivo de control del dolor e inflamación en atermia. En subaguda, recuperar el rango de movimiento con calor suave."},
+  sym:[
+   {id:"l-agudo",n:"Lumbalgia aguda sin irradiación",tests:["Regla de predicción para manipulación lumbar","Movimientos repetidos (McKenzie)"],tech:["si-sup","l-roll","tl-lat"],note:"Si cumple la regla de predicción, el thrust sacroilíaco en supino tiene alta probabilidad de éxito."},
+   {id:"l-cron",n:"Lumbalgia crónica",tests:["Test de inestabilidad en prono","Movimientos repetidos (McKenzie)"],tech:["l-roll","tl-lat"],note:"En lumbalgia crónica, la manipulación es tan eficaz como otros tratamientos recomendados. Combínala siempre con ejercicio."},
+   {id:"l-ciat",n:"Dolor irradiado a la pierna (ciática)",tests:["Elevación de pierna recta (SLR, Lasègue)","Test de Slump"],tech:["l-roll"],neuro:true,note:"Con déficit neurológico, no hagas thrust en el segmento afectado. Valora la centralización con movimientos repetidos."},
+   {id:"l-si",n:"Dolor en la nalga o sacroilíaca",tests:["Cluster de Laslett (sacroilíaca)"],tech:["si-sup","si-prono"],note:"Confirma con el cluster de Laslett."}]},
+ pectoral:{name:"Pectoral", freq:"Frecuente", y:.25,
+  tests:[
+   {n:"Palpación costocondral",o:"Costocondritis o síndrome de Tietze",p:"Palpación de las uniones costocondrales 2ª a 6ª.",r:"Dolor localizado que reproduce el síntoma. Tietze presenta además tumefacción."},
+   {n:"Test de longitud del pectoral menor",o:"Acortamiento",p:"Supino. Distancia entre el acromion posterior y la camilla.",r:"Distancia aumentada respecto al otro lado."},
+   {n:"Compresión costal",o:"Disfunción o fractura costal",p:"Compresión anteroposterior y lateral del tórax.",r:"Dolor localizado."},
+   {n:"Cribado cardiorrespiratorio",o:"Descartar origen visceral",p:"Preguntar por relación con el esfuerzo, disnea, sudoración, irradiación a mandíbula o brazo, factores de riesgo.",r:"Cualquier respuesta sospechosa: derivación urgente."}],
+  red:["Dolor torácico opresivo con el esfuerzo, disnea o sudoración (urgencia: 112)","Irradiación a mandíbula o brazo izquierdo","Dolor pleurítico con fiebre o tos","Masa mamaria o adenopatía axilar","Dolor torácico tras traumatismo"],
+  alt:["Liberación miofascial del pectoral mayor y menor","Movilización costal y esternocostal","Técnica de energía muscular del pectoral","Estiramiento activo"],
+  tecar:{"placa": "Neutro en la zona interescapular.", "src": [["Síndrome miofascial", "sindrome-miofascial"], ["Contracturas profundas (Back4)", "contracturas-profundas"]], "leve": [["CET", "CET suave", "5′", "Masaje del pectoral mayor y menor"], ["RET + RET", "RET 60% · Hi-TENS 2-5-25 · Hi-EMS Focal 30%", "5′", "Triangulación sobre la contractura del pectoral menor"], ["Thrust", "—", "—", "Costal o esternoclavicular"]], "moderado": [["CET", "CET suave · puntos fijos", "5′", "Puntos fijos sobre los puntos gatillo"], ["MIX", "Mix suave", "3′", "Maniobras sobre la fascia"], ["Manual", "—", "—", "Tejidos blandos suaves"]], "pauta": "No hay un protocolo pectoral específico en la Academy: es una adaptación de los protocolos miofascial y de contracturas. Nunca sin cribado cardíaco previo."},
+  sym:[
+   {id:"p-mec",n:"Dolor pectoral mecánico o postural",tests:["Test de longitud del pectoral menor","Compresión costal","Cribado cardiorrespiratorio"],tech:["cost-sup","t-supino","sc-sup"],note:"Haz siempre el cribado cardiorrespiratorio antes de tratar dolor torácico anterior."},
+   {id:"p-cc",n:"Dolor en el esternón o costocondral",tests:["Palpación costocondral","Cribado cardiorrespiratorio"],tech:["cost-sup"],force:"moderado",note:"La costocondritis responde mejor a técnicas suaves y TECAR atérmico que al thrust directo."}]},
+ cadera:{name:"Cadera y pubis", freq:"Menos frecuente", y:.5,
+  tests:[
+   {n:"Test FABER (Patrick)",o:"Cadera o sacroilíaca",p:"Supino. Flexión, abducción y rotación externa con presión sobre la rodilla.",r:"Dolor inguinal (cadera) o posterior (sacroilíaca)."},
+   {n:"Test FADIR",o:"Choque femoroacetabular, labrum",p:"Supino. Flexión de 90°, aducción y rotación interna.",r:"Dolor inguinal. Alta sensibilidad: si es negativo, ayuda a descartar."},
+   {n:"Test de Thomas",o:"Acortamiento de flexores de cadera",p:"Supino en el borde de la camilla abrazando una rodilla.",r:"El muslo contrario se eleva de la camilla."},
+   {n:"Squeeze test de aductores",o:"Pubalgia, aductores",p:"Supino con rodillas flexionadas. Apretar un puño o un esfigmomanómetro entre las rodillas.",r:"Dolor en la sínfisis o en la inserción de aductores."},
+   {n:"Log roll",o:"Patología intraarticular de cadera",p:"Supino. Rotación pasiva interna y externa de la pierna extendida.",r:"Dolor inguinal o clic."},
+   {n:"Test de Trendelenburg",o:"Debilidad del glúteo medio",p:"Apoyo monopodal 30 segundos.",r:"Caída de la pelvis del lado contrario."}],
+  red:["Dolor inguinal en paciente joven con cojera (descartar epifisiólisis o Perthes)","Corticoides o alcohol con dolor inguinal (necrosis avascular)","Fractura de estrés en corredores o mujeres con baja densidad ósea","Fiebre con dolor articular (artritis séptica)","Hernia inguinal"],
+  alt:["Movilización de Kaltenborn en tracción y deslizamiento","Movilización con movimiento de Mulligan","Técnica de energía muscular de aductores y psoas","Ejercicio de fuerza de cadera"],
+  tecar:{"placa": "Neutro fijo en la sacroilíaca (cadera) o placa en el abdomen (pubalgia).", "src": [["Coxartrosis (Back4)", "coxartrosis"], ["Pubalgia", "pubalgia"]], "leve": [["CET + CET", "CET 50%", "5′", "Masaje de cuádriceps y aductores (2 áreas)"], ["RET + RET", "RET 40% · Hi-TENS Dynamic · Hi-EMS PushBack+", "5′", "Triangulación sobre la coxofemoral con movilización pasiva (3 áreas)"], ["Thrust", "—", "—", "Tracción de cadera o técnica de sínfisis"]], "moderado": [["CET + CET", "CET 50% · calor bajo", "5′", "Masaje periférico"], ["RET + RET", "RET 40% · calor bajo si hay inflamación", "5′", "Movilización pasiva suave"], ["Manual", "—", "—", "Movilización y fuerza progresiva"]], "pauta": "En pubalgia: CET en aductores, RET en la inserción inguinal y el psoas, y ejercicio excéntrico de aductores con electrodos adhesivos y placa en el abdomen."},
+  sym:[
+   {id:"ca-art",n:"Dolor inguinal y rigidez (artrosis)",tests:["Test FABER (Patrick)","Log roll","Test FADIR"],tech:["hip-trac"],note:"La terapia manual, incluida la tracción, mejora dolor y función en artrosis de cadera. Combínala con ejercicio."},
+   {id:"ca-pub",n:"Dolor en el pubis o aductores",tests:["Squeeze test de aductores","Test de Thomas"],tech:["pub-shot","si-sup"],note:"En pubalgia del deportista, el ejercicio de aductores es la base del tratamiento."},
+   {id:"ca-lat",n:"Dolor lateral de cadera",tests:["Test de Trendelenburg","Test FABER (Patrick)"],tech:["si-sup"],force:"moderado",note:"La tendinopatía glútea no responde a thrust. Usa ejercicio de carga y TECAR."}]},
+ rodilla:{name:"Rodilla", freq:"Menos frecuente", y:.72,
+  tests:[
+   {n:"Test de Lachman",o:"Ligamento cruzado anterior",p:"Supino, rodilla a 20–30° de flexión. Traslación anterior de la tibia.",r:"Desplazamiento aumentado sin tope firme."},
+   {n:"Cajón anterior y posterior",o:"Ligamentos cruzados",p:"Rodilla a 90° con el pie fijado. Traslación anterior y posterior de la tibia.",r:"Desplazamiento aumentado respecto al otro lado."},
+   {n:"Test de McMurray",o:"Lesión meniscal",p:"Flexión máxima con rotación tibial y extensión progresiva.",r:"Clic doloroso en la interlínea."},
+   {n:"Test de Thessaly",o:"Lesión meniscal",p:"Apoyo monopodal con la rodilla a 20°, rotaciones del tronco.",r:"Dolor en la interlínea o bloqueo."},
+   {n:"Estrés en varo y valgo",o:"Ligamentos colaterales",p:"Fuerza en varo y valgo a 0° y 30° de flexión.",r:"Apertura aumentada o dolor."},
+   {n:"Reglas de Ottawa de rodilla",o:"Necesidad de radiografía tras traumatismo",p:"Edad ≥55, dolor aislado de rótula, dolor en cabeza del peroné, no flexiona a 90° o no carga 4 pasos.",r:"Cualquier criterio: derivar para radiografía."}],
+  red:["Derrame a tensión tras traumatismo (hemartros)","Bloqueo articular real","Rodilla caliente y roja con fiebre","Dolor en la pantorrilla con edema (trombosis)","Cumple las reglas de Ottawa"],
+  alt:["Movilización tibiofemoral y femoropatelar","Movilización con movimiento de Mulligan","Thrust de cadera en artrosis de rodilla","Ejercicio de fuerza de cuádriceps y cadera"],
+  tecar:{"placa": "Neutro fijo bajo el muslo; en el paso 3, neutro móvil alrededor de la articulación.", "src": [["Artrosis de rodilla (Back4)", "artrosis-de-rodilla"]], "leve": [["CET + CET", "CET 50%", "3′", "Masaje de cuádriceps y aductores"], ["RET + RET", "RET 40% · Hi-TENS Dynamic · Hi-EMS Rehab+", "5′", "Inserciones profundas del cuádriceps y búsqueda de puntos motores (Delta)"], ["Thrust", "—", "—", "Tibioperonea proximal o tracción de cadera"], ["RET", "RET 40% · Hi-TENS Dynamic · Hi-EMS PushBack+", "5′", "Movilización articular con neutro móvil"]], "moderado": [["CET + CET", "CET 50% · calor bajo", "3′", "Masaje periférico"], ["RET", "RET 40% · calor bajo · Hi-TENS Dynamic", "5′", "Movilización articular suave"], ["Manual", "—", "—", "Movilización y descarga"]], "pauta": "Si la rodilla está inflamada, baja a calor bajo en todos los pasos."},
+  sym:[
+   {id:"r-art",n:"Dolor de rodilla en mayor de 50 años (artrosis)",tests:["Estrés en varo y valgo","Test de Thessaly"],tech:["hip-trac","tf-prox"],note:"En artrosis de rodilla, la manipulación de cadera reduce el dolor en un subgrupo de pacientes con dolor de cadera asociado."},
+   {id:"r-lat",n:"Dolor lateral o en la cabeza del peroné",tests:["Estrés en varo y valgo"],tech:["tf-prox"],note:"La tibioperonea proximal se relaciona con el tobillo: valora ambas."},
+   {id:"r-trauma",n:"Tras torcedura o traumatismo",tests:["Reglas de Ottawa de rodilla","Test de Lachman","Test de McMurray"],tech:[],force:"grave",note:"Ante traumatismo con derrame o positivo en las reglas de Ottawa, deriva para imagen."}]},
+ tobillo:{name:"Tobillo", freq:"Menos frecuente", y:.92,
+  tests:[
+   {n:"Reglas de Ottawa de tobillo",o:"Necesidad de radiografía",p:"Dolor en el borde posterior o en la punta de los maléolos, base del 5º metatarsiano, escafoides, o incapacidad para cargar 4 pasos.",r:"Cualquier criterio: derivar para radiografía. Muy alta sensibilidad."},
+   {n:"Cajón anterior",o:"Ligamento peroneoastragalino anterior",p:"Tobillo en ligera flexión plantar. Traslación anterior del astrágalo.",r:"Desplazamiento aumentado respecto al otro lado. Más fiable a los 4–5 días."},
+   {n:"Talar tilt",o:"Ligamento peroneocalcáneo",p:"Inversión forzada del calcáneo en posición neutra.",r:"Apertura aumentada."},
+   {n:"Squeeze test",o:"Sindesmosis tibioperonea",p:"Compresión de tibia y peroné a mitad de la pierna.",r:"Dolor en la sindesmosis distal. Si es positivo, la recuperación es más lenta."},
+   {n:"Test de Thompson",o:"Rotura del tendón de Aquiles",p:"Prono. Compresión del gemelo.",r:"Ausencia de flexión plantar: derivación urgente."},
+   {n:"Lunge test (rodilla a la pared)",o:"Dorsiflexión en carga",p:"Llevar la rodilla a la pared sin despegar el talón.",r:"Diferencia mayor de 2 cm con el otro lado. Sirve para reevaluar tras el thrust."}],
+  red:["Cumple las reglas de Ottawa","Test de Thompson positivo","Edema con dolor en la pantorrilla (trombosis)","Pie frío, pálido o sin pulso","Deformidad o inestabilidad grosera"],
+  alt:["Movilización del astrágalo en deslizamiento posterior","Movilización con movimiento de Mulligan en carga","Drenaje y vendaje funcional","Ejercicio de propiocepción"],
+  tecar:{"placa": "Neutro fijo bajo la pantorrilla o en el hueco poplíteo.", "src": [["Esguince de tobillo agudo (Back4)", "esguince-de-tobillo-agudo-2"]], "leve": [["CET + CET", "CET 40%", "3′", "Masaje de peroneos y tibial posterior"], ["RET", "RET 30% · Hi-TENS Dynamic · Hi-EMS Pushback+", "4′", "Calor suave alrededor de la articulación"], ["Thrust", "—", "—", "Tracción de tobillo o técnica tibioperonea"]], "moderado": [["CET", "CET 60%", "2′", "Estimulación vascular del hueco poplíteo"], ["CET + CET", "CET 40%", "2′", "Masaje de peroneos y tibial posterior"], ["Pulsera + CET", "CET 20% · RET 30% LOW", "4′", "Pulsera en los metatarsos del paciente: drenaje del empeine"], ["RET", "RET 30% LOW · Hi-TENS Dynamic · Hi-EMS Pushback+", "4′", "Drenaje alrededor del empeine"]], "pauta": "El protocolo de la Academy es para esguince agudo y se puede empezar pronto. En subagudo, una vez descartada fractura, añade el thrust de tracción."},
+  sym:[
+   {id:"t-esg",n:"Esguince de inversión subagudo",tests:["Reglas de Ottawa de tobillo","Cajón anterior","Lunge test (rodilla a la pared)"],tech:["ank-trac","tf-prox","cub-whip"],note:"Tras descartar fractura, el thrust de tracción del tobillo junto con ejercicio acelera la recuperación funcional."},
+   {id:"t-agudo",n:"Esguince agudo (primeras 72 h)",tests:["Reglas de Ottawa de tobillo","Squeeze test"],tech:[],force:"moderado",note:"En la fase aguda, sin thrust. TECAR atérmico a 1000 kHz para drenaje, protección y carga progresiva."},
+   {id:"t-rig",n:"Rigidez en dorsiflexión",tests:["Lunge test (rodilla a la pared)"],tech:["ank-trac","tf-dist"],note:"Reevalúa con el lunge test después de la técnica."},
+   {id:"t-aq",n:"Dolor en el Aquiles tras impulso brusco",tests:["Test de Thompson"],tech:[],force:"grave",note:"Con test de Thompson positivo, deriva de urgencia."}]},
+ codo:{name:"Codo", freq:"Ocasional", y:.33,
+  tests:[
+   {n:"Test de Cozen",o:"Epicondilalgia lateral (codo de tenista)",p:"Codo extendido, antebrazo en pronación y puño cerrado. Extensión resistida de la muñeca.",r:"Dolor en el epicóndilo lateral."},
+   {n:"Test de Mill",o:"Epicondilalgia lateral",p:"Estiramiento pasivo: flexión de muñeca, pronación y extensión de codo.",r:"Dolor en el epicóndilo lateral."},
+   {n:"Test de Maudsley",o:"Epicondilalgia lateral (extensor común)",p:"Extensión resistida del dedo medio con el codo extendido.",r:"Dolor en el epicóndilo lateral."},
+   {n:"Test del codo de golfista",o:"Epicondilalgia medial",p:"Codo extendido, antebrazo en supinación. Flexión resistida de la muñeca.",r:"Dolor en la epitróclea."},
+   {n:"Test de flexión de codo y Tinel cubital",o:"Neuropatía del nervio cubital",p:"Flexión máxima del codo con muñeca en extensión durante 60 s; percusión sobre el surco cubital.",r:"Parestesias en el 4º y 5º dedo."},
+   {n:"Test de extensión del codo",o:"Descartar fractura tras traumatismo",p:"El paciente extiende el codo por completo en supino o sentado.",r:"Si no logra la extensión completa, deriva para radiografía."}],
+  red:["Traumatismo con incapacidad para extender el codo","Bursitis olecraniana caliente y roja con fiebre (séptica)","Déficit motor progresivo en la mano (cubital o radial)","Deformidad o inestabilidad tras una caída","Masa o dolor nocturno constante"],
+  alt:["Movilización con movimiento de Mulligan (deslizamiento lateral)","Masaje transverso profundo","Ejercicio isométrico y excéntrico de extensores","Movilización de la cabeza del radio","Abordaje cervical y cervicotorácico (C5–C7)"],
+  tecar:{placa:"Neutro móvil en el antebrazo para concentrar la corriente en la zona dolorosa.",src:[["Codo de tenista (Back4)","codo-de-tenista"],["Entesopatías","entesopatias"]],
+   leve:[["CET + CET","CET 40%","3′","Masaje relajante de los músculos agonistas y antagonistas del antebrazo, diatermia suave"],["RET","RET 50% · Hi-TENS 25 Hz · Hi-EMS sin dolor+","2′","Liberar tensiones musculares con calor suave, neutro móvil"],["Thrust","—","—","Manipulación de Mills o cabeza del radio"],["Hi-RET","Hi-TENS 5 Hz · Hi-EMS PushBack+","3′","Sobre la zona dolorosa con diatermia fuerte; Hi-TENS Dynamic potencia la analgesia"]],
+   moderado:[["CET + CET","CET 40% · calor suave","3′","Masaje del antebrazo"],["Hi-RET","Hi-RET 66% · barrido","2′","Barrido de la entesis (protocolo de entesopatías)"],["MIX","Hi-RET 66% · Hi-TENS 3 Hz","3′","Puntos dolorosos; sin thrust, con ejercicio isométrico"]],
+   pauta:"La manipulación de Mills es un complemento. La base del tratamiento es el ejercicio de carga progresiva y la movilización con movimiento."},
+  sym:[
+   {id:"co-lat",n:"Dolor en el epicóndilo (codo de tenista)",tests:["Test de Cozen","Test de Mill","Test de Maudsley"],tech:["mills","radhum","ct-prono"],note:"Valora también la región cervical (C5–C7): la combinación de tratamiento local y cervicotorácico da mejores resultados en epicondilalgia."},
+   {id:"co-med",n:"Dolor en la epitróclea (codo de golfista)",tests:["Test del codo de golfista","Test de flexión de codo y Tinel cubital"],tech:[],force:"moderado",note:"Sin thrust específico. Ejercicio de carga, tejidos blandos y TECAR."},
+   {id:"co-cub",n:"Hormigueo en el 4º y 5º dedo",tests:["Test de flexión de codo y Tinel cubital","ULTT A (ULNT1, nervio mediano)"],tech:["ct-prono","t-supino"],neuro:true,note:"Diferencia entre atrapamiento cubital en el codo y radiculopatía C8. Con debilidad intrínseca de la mano, deriva."},
+   {id:"co-trauma",n:"Tras caída sobre el brazo",tests:["Test de extensión del codo"],tech:[],force:"grave",note:"Si no extiende el codo por completo, deriva para radiografía."}]},
+ muneca:{name:"Muñeca y mano", freq:"Ocasional", y:.42,
+  tests:[
+   {n:"Test de Phalen",o:"Síndrome del túnel carpiano",p:"Flexión máxima de ambas muñecas, dorsos enfrentados, durante 60 s.",r:"Parestesias en el territorio del nervio mediano."},
+   {n:"Signo de Tinel carpiano",o:"Síndrome del túnel carpiano",p:"Percusión sobre el retináculo flexor.",r:"Parestesias irradiadas a los tres primeros dedos."},
+   {n:"Test de compresión carpiana (Durkan)",o:"Síndrome del túnel carpiano",p:"Presión con los pulgares sobre el túnel carpiano durante 30 s.",r:"Parestesias en el territorio del mediano."},
+   {n:"Test de Finkelstein",o:"Tenosinovitis de De Quervain",p:"Pulgar dentro del puño y desviación cubital de la muñeca.",r:"Dolor intenso en la estiloides radial."},
+   {n:"Palpación de la tabaquera anatómica",o:"Fractura de escafoides",p:"Palpación de la tabaquera tras una caída sobre la mano en extensión.",r:"Dolor localizado: deriva para imagen aunque la radiografía inicial sea normal."},
+   {n:"Test de Watson",o:"Inestabilidad escafolunar",p:"Presión sobre el polo distal del escafoides mientras se lleva la muñeca de desviación cubital a radial.",r:"Dolor dorsal o resalte. Positivo contraindica el thrust carpiano."},
+   {n:"Test de compresión del fibrocartílago triangular",o:"Lesión del complejo fibrocartílago triangular",p:"Desviación cubital con compresión axial y rotaciones del antebrazo.",r:"Dolor o chasquido en el lado cubital."}],
+  red:["Dolor en la tabaquera anatómica tras una caída","Atrofia tenar o pérdida de fuerza progresiva en la mano","Muñeca caliente, roja y tumefacta (artritis séptica o gota)","Deformidad tras traumatismo","Síntomas en ambas manos con torpeza y alteración de la marcha (mielopatía cervical)"],
+  alt:["Movilización del carpo y de la radiocarpiana","Deslizamiento neural del mediano","Férula nocturna en túnel carpiano","Masaje y tejidos blandos del antebrazo","Ejercicio de fuerza y propiocepción"],
+  tecar:{placa:"Neutro móvil; en el paso de movilización, una pulsera en el antebrazo del paciente y otra en el del terapeuta.",src:[["Túnel carpiano (Back4)","tunel-carpiano"],["Tendinitis y tenosinovitis","tendinitis-y-tenosinovitis"]],
+   leve:[["Hi-RET","RET 60% · Hi-TENS 2 Hz","3′","Sobre el retináculo para tratar la fibrosis; hipertermia alternada con trabajo manual"],["Pulseras","RET 30% LOW","5′","Movilización de la muñeca con diatermia suave: aquí encaja la técnica manual o el thrust"]],
+   moderado:[["SWAP","2 s Hi-RET 66% / 2 s Hi-TENS+ 25 Hz","2′","Fase analgésica si hay dolor (protocolo de tenosinovitis)"],["MIX","Hi-RET 33–66% · Hi-TENS 2–3 Hz","3′","Reducir la inflamación del tendón, sin calor fuerte"],["Manual","—","—","Movilización suave y férula si procede, sin thrust"]],
+   pauta:"La hipertermia del protocolo de túnel carpiano es para fibrosis sin inflamación. En tenosinovitis o fase inflamatoria, quédate en atermia o calor suave."},
+  sym:[
+   {id:"mu-stc",n:"Hormigueo en los tres primeros dedos",tests:["Test de Phalen","Signo de Tinel carpiano","Test de compresión carpiana (Durkan)","ULTT A (ULNT1, nervio mediano)"],tech:["carp-trac","ct-prono"],note:"Descarta origen cervical (doble compresión). Con atrofia tenar o déficit motor, deriva."},
+   {id:"mu-dq",n:"Dolor en el borde radial al mover el pulgar",tests:["Test de Finkelstein"],tech:[],force:"moderado",note:"De Quervain no se trata con thrust. TECAR en atermia, férula y ejercicio progresivo."},
+   {id:"mu-rig",n:"Rigidez tras una inmovilización",tests:["Test de Watson","Test de compresión del fibrocartílago triangular"],tech:["carp-trac","carp-whip"],note:"Confirma que la fractura está consolidada antes de cualquier thrust."},
+   {id:"mu-trauma",n:"Dolor tras caída sobre la mano",tests:["Palpación de la tabaquera anatómica"],tech:[],force:"grave",note:"Con dolor en la tabaquera, inmoviliza y deriva: la fractura de escafoides puede no verse en la primera radiografía."}]}
+
+};
+
+const POS = {supino:"Supino",prono:"Prono",lateral:"Decúbito lateral",sedest:"Sedestación"};
+/* vector: down (hacia la camilla), up, long (tracción eje longitudinal), rot (rotación), lat (lateral) */
+const TECH = [
+ {id:"c-rot",n:"Thrust cervical en rotación",reg:"cervical",seg:"C2–C7",pos:"supino",v:"rot",pat:["Dolor cervical mecánico","Tortícolis"],
+  steps:["Paciente en supino con la cabeza fuera de la tensión de la camilla.","Contacto con la articulación del dedo índice (MCF) sobre el pilar articular del segmento.","Ligera lateroflexión hacia el lado de contacto y rotación contralateral hasta la barrera, sin llegar al final del rango.","Impulso corto y rápido en rotación en el plano de la faceta, hacia el ojo contrario."],
+  err:["Rotación excesiva o extensión combinada","Impulso con amplitud grande","No reevaluar tras el posicionamiento"],q:"cervical rotation HVLA thrust supine manipulation",lvl:"leve"},
+ {id:"c-lat",n:"Thrust cervical en lateroflexión (side-glide)",reg:"cervical",seg:"C2–C7",pos:"supino",v:"lat",pat:["Dolor cervical mecánico","Tortícolis","Cefalea cervicogénica"],
+  steps:["Paciente en supino, cabeza sostenida por ambas manos.","Contacto con la MCF del índice sobre el pilar articular.","Lateroflexión hacia el contacto y rotación contralateral mínima.","Impulso en traslación lateral hacia el lado contrario."],
+  err:["Añadir rotación grande","Contacto doloroso sobre partes blandas"],q:"cervical lateral glide thrust manipulation side bending",lvl:"leve"},
+ {id:"c-c0c1",n:"Thrust suboccipital C0–C1",reg:"cervical",seg:"C0–C1",pos:"supino",v:"long",pat:["Cefalea cervicogénica"],
+  steps:["Paciente en supino. Una mano sujeta el occipital y la otra el mentón.","Ligera flexión del raquis cervical superior.","Tracción progresiva hasta tomar la tensión.","Impulso corto en tracción en el eje craneal."],
+  err:["Extensión del cuello superior","Fuerza excesiva en el mentón"],q:"occipitoatlantal C0 C1 thrust manipulation",lvl:"leve"},
+ {id:"ct-prono",n:"Thrust de la charnela cervicotorácica (nadador)",reg:"cervical",seg:"C7–T2",pos:"prono",v:"lat",pat:["Dolor cervical mecánico","Dolor de hombro","Tensión de trapecios"],
+  steps:["Paciente en prono con la cabeza rotada hacia el terapeuta y el brazo homolateral elevado por encima de la cabeza.","Pulgar en el lateral de la apófisis espinosa de T1.","Otra mano en el occipital para tomar la tensión en lateroflexión.","Impulso lateral con el pulgar sobre la espinosa."],
+  err:["Lateroflexión excesiva del cuello","Pulgar sobre la transversa en lugar de la espinosa"],q:"cervicothoracic junction swimmer thrust manipulation prone",lvl:"leve"},
+ {id:"t-supino",n:"Thrust dorsal en supino (brazos cruzados)",reg:"dorsal",seg:"T3–T10",pos:"supino",v:"down",pat:["Dolor dorsal","Dolor cervical mecánico","Dolor de hombro"],
+  steps:["Paciente con los brazos cruzados sobre el pecho y las manos en los hombros.","Gira al paciente hacia ti y coloca la mano en puño o en cuña bajo el segmento inferior.","Devuelve al paciente a supino sobre tu mano y apoya tu tórax en sus codos.","Al final de la espiración, impulso hacia la camilla siguiendo la dirección de sus antebrazos."],
+  err:["Impulso sin flexionar ligeramente el tronco hasta el segmento","Codos del paciente separados"],q:"supine thoracic thrust manipulation crossed arms",lvl:"leve"},
+ {id:"t-prono",n:"Thrust dorsal en prono (pisiformes cruzados)",reg:"dorsal",seg:"T4–T10",pos:"prono",v:"down",pat:["Dolor dorsal","Dolor costal"],
+  steps:["Paciente en prono, brazos a los lados.","Pisiformes cruzados sobre las transversas del segmento.","Toma la tensión de la piel y del segmento.","Impulso posteroanterior al final de la espiración."],
+  err:["Fuerza sin tomar la holgura","Contacto sobre las espinosas"],q:"prone thoracic thrust manipulation crossed pisiform",lvl:"leve"},
+ {id:"t-sed",n:"Thrust dorsal en sedestación (lift)",reg:"dorsal",seg:"T5–T10",pos:"sedest",v:"up",pat:["Dolor dorsal"],
+  steps:["Paciente sentado con los dedos entrelazados detrás del cuello.","Terapeuta detrás, con un apoyo (cojín o toalla) contra el segmento.","Toma los antebrazos del paciente y lleva una ligera extensión.","Impulso hacia arriba y atrás al final de la espiración."],
+  err:["Hiperextensión cervical del paciente","Sin cojín de apoyo"],q:"seated thoracic lift thrust manipulation",lvl:"leve"},
+ {id:"r1-sed",n:"Thrust de la 1ª costilla en sedestación",reg:"trapecio",seg:"1ª costilla",pos:"sedest",v:"down",pat:["Tensión de trapecios","Dolor cervical mecánico"],
+  steps:["Paciente sentado, terapeuta detrás.","Contacto con la MCF del índice sobre la cara posterosuperior de la 1ª costilla.","Lateroflexión cervical hacia el lado tratado y rotación contraria.","Impulso hacia abajo y hacia el ombligo contrario."],
+  err:["Presión sobre el plexo braquial","Lateroflexión excesiva"],q:"first rib thrust manipulation seated",lvl:"leve"},
+ {id:"r1-sup",n:"Thrust de la 1ª costilla en supino",reg:"trapecio",seg:"1ª costilla",pos:"supino",v:"down",pat:["Tensión de trapecios","Dolor cervical mecánico"],
+  steps:["Paciente en supino.","Contacto con la MCF del índice sobre la 1ª costilla.","Lateroflexión cervical hacia el contacto y rotación contraria.","Impulso hacia caudal y medial."],
+  err:["Contacto demasiado anterior"],q:"first rib manipulation supine HVLA",lvl:"leve"},
+ {id:"cost-sup",n:"Thrust costal en supino (costillas 2–8)",reg:"pectoral",seg:"Costillas 2–8",pos:"supino",v:"down",pat:["Dolor costal","Dolor pectoral","Dolor dorsal"],
+  steps:["Igual que el thrust dorsal en supino, con el contacto en el ángulo costal.","Coloca la eminencia tenar bajo el ángulo de la costilla.","Brazos del paciente cruzados.","Impulso hacia la camilla al final de la espiración."],
+  err:["Contacto sobre la transversa en lugar del ángulo costal"],q:"rib manipulation supine thrust costovertebral",lvl:"leve"},
+ {id:"sc-sup",n:"Thrust esternoclavicular",reg:"pectoral",seg:"Esternoclavicular",pos:"supino",v:"lat",pat:["Dolor pectoral","Dolor de hombro"],
+  steps:["Paciente en supino.","Contacto con el pisiforme sobre el extremo medial de la clavícula.","Abducción del brazo del paciente para tomar la tensión.","Impulso lateral y posterior."],
+  err:["Presión sobre el esternón"],q:"sternoclavicular joint manipulation",lvl:"leve"},
+ {id:"ac-sed",n:"Thrust acromioclavicular",reg:"hombro",seg:"Acromioclavicular",pos:"sedest",v:"down",pat:["Dolor de hombro"],
+  steps:["Paciente sentado.","Contacto con el pisiforme sobre el extremo distal de la clavícula.","Otra mano lleva el brazo en aducción horizontal para tomar la tensión.","Impulso hacia caudal sobre la clavícula."],
+  err:["Contacto sobre el acromion"],q:"acromioclavicular joint manipulation thrust",lvl:"leve"},
+ {id:"gh-caudal",n:"Thrust glenohumeral en caudal",reg:"hombro",seg:"Glenohumeral",pos:"supino",v:"long",pat:["Dolor de hombro"],
+  steps:["Paciente en supino con el brazo en abducción de 90°.","Contacto con la membrana interdigital sobre la cara superior de la cabeza humeral.","Toma la tensión en deslizamiento caudal.","Impulso corto hacia caudal."],
+  err:["Usar en inestabilidad o capsulitis","Abducción excesiva"],q:"glenohumeral caudal glide thrust manipulation",lvl:"leve"},
+ {id:"l-roll",n:"Thrust lumbar en decúbito lateral (lumbar roll)",reg:"lumbar",seg:"L1–L5",pos:"lateral",v:"rot",pat:["Lumbalgia","Ciática sin déficit"],
+  steps:["Paciente en decúbito lateral. Pierna superior flexionada con el pie en el hueco poplíteo.","Rota el tronco superior hasta llegar al segmento desde arriba.","Antebrazo sobre la pelvis y otro antebrazo en el hombro.","Impulso rotando la pelvis hacia ti con el cuerpo."],
+  err:["No localizar el segmento","Impulso con los brazos en lugar del cuerpo"],q:"lumbar roll side lying thrust manipulation",lvl:"leve"},
+ {id:"si-sup",n:"Thrust sacroilíaco en supino (Chicago)",reg:"lumbar",seg:"Sacroilíaca y lumbosacra",pos:"supino",v:"down",pat:["Lumbalgia","Dolor sacroilíaco","Pubalgia"],
+  steps:["Paciente en supino con los dedos entrelazados detrás del cuello.","Lateroflexión del tronco hacia el lado contrario al tratado.","Rota el tronco hacia ti sujetando el hombro contrario.","Impulso posterior e inferior sobre la EIAS del lado tratado."],
+  err:["Lateroflexión insuficiente","Impulso en la dirección equivocada"],q:"supine sacroiliac thrust manipulation Chicago technique",lvl:"leve"},
+ {id:"si-prono",n:"Thrust sacroilíaco en prono",reg:"lumbar",seg:"Sacroilíaca",pos:"prono",v:"down",pat:["Dolor sacroilíaco"],
+  steps:["Paciente en prono.","Pisiforme sobre la espina ilíaca posterosuperior o el sacro.","Toma la tensión.","Impulso posteroanterior."],
+  err:["Contacto sobre partes blandas"],q:"prone sacroiliac joint thrust manipulation",lvl:"leve"},
+ {id:"tl-lat",n:"Thrust de la charnela toracolumbar",reg:"lumbar",seg:"T11–L2",pos:"lateral",v:"rot",pat:["Lumbalgia","Dolor dorsal"],
+  steps:["Igual que el lumbar roll, con la localización en T11–L2.","Mayor flexión de la pierna superior.","Rotación desde arriba hasta el segmento.","Impulso en rotación."],
+  err:["Rotación excesiva del tronco"],q:"thoracolumbar junction thrust manipulation side lying",lvl:"leve"},
+ {id:"hip-trac",n:"Thrust en tracción de cadera",reg:"cadera",seg:"Coxofemoral",pos:"supino",v:"long",pat:["Artrosis de cadera","Artrosis de rodilla"],
+  steps:["Paciente en supino.","Toma el tobillo con ambas manos por encima de los maléolos.","Ligera abducción, flexión y rotación interna hasta la posición de reposo.","Impulso en tracción en el eje de la pierna."],
+  err:["Usar en prótesis de cadera","Tracción sin tomar la tensión"],q:"hip long axis distraction thrust manipulation",lvl:"leve"},
+ {id:"pub-shot",n:"Técnica de sínfisis púbica (shotgun)",reg:"cadera",seg:"Sínfisis púbica",pos:"supino",v:"lat",pat:["Pubalgia"],
+  steps:["Paciente en supino con las rodillas flexionadas.","Contracción isométrica en abducción contra tus manos.","Después, contracción en aducción con tu antebrazo entre las rodillas.","El ajuste se produce durante la aducción."],
+  err:["Usar en postparto reciente sin valorar","Fuerza excesiva"],q:"pubic symphysis shotgun technique",lvl:"leve"},
+ {id:"tf-prox",n:"Thrust tibioperoneo proximal",reg:"rodilla",seg:"Tibioperonea proximal",pos:"supino",v:"down",pat:["Dolor lateral de rodilla","Esguince de tobillo"],
+  steps:["Paciente en supino con la rodilla flexionada.","Contacto con la MCF del índice detrás de la cabeza del peroné.","Flexión de rodilla sobre tu mano.","Impulso en flexión hacia la nalga."],
+  err:["Presión sobre el nervio peroneo","Flexión forzada"],q:"proximal tibiofibular joint manipulation",lvl:"leve"},
+ {id:"ank-trac",n:"Thrust en tracción de tobillo",reg:"tobillo",seg:"Tibioastragalina",pos:"supino",v:"long",pat:["Esguince de tobillo","Rigidez de tobillo"],
+  steps:["Paciente en supino.","Dedos entrelazados sobre el dorso del pie, pulgares en la planta.","Lleva el tobillo a dorsiflexión y toma la tensión.","Impulso en tracción en el eje de la pierna."],
+  err:["Hacerlo en fase aguda","Tracción sin dorsiflexión"],q:"ankle distraction thrust manipulation talocrural",lvl:"leve"},
+ {id:"tf-dist",n:"Thrust tibioperoneo distal",reg:"tobillo",seg:"Tibioperonea distal",pos:"supino",v:"down",pat:["Rigidez de tobillo","Esguince de tobillo"],
+  steps:["Paciente en supino.","Contacto con el pisiforme en el maléolo externo.","Estabiliza la tibia.","Impulso anteroposterior."],
+  err:["Usar con lesión de sindesmosis"],q:"distal tibiofibular joint manipulation",lvl:"leve"},
+ {id:"cub-whip",n:"Thrust de cuboides (whip)",reg:"tobillo",seg:"Cuboides",pos:"prono",v:"down",pat:["Esguince de tobillo"],
+  steps:["Paciente en prono con la rodilla flexionada.","Pulgares sobre la cara plantar del cuboides.","Lleva el tobillo a flexión plantar.","Impulso en latigazo hacia dorsal."],
+  err:["Contacto sobre el 5º metatarsiano"],q:"cuboid whip manipulation",lvl:"leve"},
+ {id:"mills",n:"Manipulación de Mills",reg:"codo",seg:"Codo, extensor común",pos:"sedest",v:"long",pat:["Codo de tenista"],
+  steps:["Paciente sentado con el hombro en abducción de 90° y rotación interna; terapeuta detrás.","Lleva la muñeca a flexión completa y el antebrazo a pronación.","Extiende el codo hasta la barrera manteniendo la flexión y la pronación.","Impulso corto en extensión del codo."],
+  err:["Usar con derrame o inestabilidad del codo","Forzar la extensión sin localizar la barrera"],q:"Mills manipulation tennis elbow",lvl:"leve"},
+ {id:"radhum",n:"Thrust de la cabeza del radio (posterior)",reg:"codo",seg:"Radiohumeral",pos:"supino",v:"down",pat:["Codo de tenista","Dolor lateral de codo"],
+  steps:["Paciente en supino con el codo casi en extensión y el antebrazo en supinación.","Pulgar sobre la cara anterior de la cabeza del radio.","Lleva a extensión y pronación hasta la barrera.","Impulso anteroposterior sobre la cabeza del radio."],
+  err:["Presión sobre el nervio radial","Hiperextensión del codo"],q:"radial head manipulation posterior glide",lvl:"leve"},
+ {id:"carp-trac",n:"Thrust en tracción radiocarpiana",reg:"muneca",seg:"Radiocarpiana",pos:"sedest",v:"long",pat:["Túnel carpiano","Rigidez de muñeca"],
+  steps:["Paciente sentado con el codo flexionado.","Estabiliza el radio y el cúbito distales con una mano.","Toma la primera fila del carpo con la otra mano.","Tracción hasta la tensión e impulso corto en el eje del antebrazo."],
+  err:["Usar con inestabilidad del carpo","Tracción sin estabilizar el antebrazo"],q:"radiocarpal distraction thrust manipulation wrist",lvl:"leve"},
+ {id:"carp-whip",n:"Thrust carpiano en látigo",reg:"muneca",seg:"Semilunar y huesos del carpo",pos:"sedest",v:"down",pat:["Rigidez de muñeca"],
+  steps:["Antebrazo del paciente en pronación.","Pulgares cruzados sobre la cara dorsal del hueso a tratar, dedos rodeando la cara palmar.","Ligera tracción y extensión de la muñeca.","Impulso en látigo hacia flexión con presión dorsopalmar sobre el hueso."],
+  err:["Hacerlo con test de Watson positivo","Fractura no consolidada"],q:"carpal bone manipulation whip lunate",lvl:"leve"}
+
+];
+
+const PAT_LIST = [...new Set(TECH.flatMap(t=>t.pat))].sort((a,b)=>a.localeCompare(b,'es'));
+
+const EVIDENCE = [
+ {g:"b",t:"Revisión sistemática de TECAR en rehabilitación",s:"Beltrame et al., International Journal of Rehabilitation Research, 2020",p:"Analizó 13 estudios, 9 de ellos ensayos aleatorizados, pero solo 2 tenían bajo riesgo de sesgo. En general, TECAR redujo la intensidad del dolor tras el tratamiento.",u:"https://symmetryptmiami.com/?p=10596"},
+ {g:"b",t:"TECAR en artrosis de rodilla",s:"Coccetta et al., ensayo aleatorizado frente a placebo",p:"Seis aplicaciones en dos semanas mejoraron dolor, rigidez, fuerza y función, con beneficios mantenidos a los 3 meses.",u:"https://irinsubria.uninsubria.it/handle/11383/2099163"},
+ {g:"c",t:"TECAR a nivel muscular",s:"Sánchez Lozano et al., Archivos de Medicina del Deporte, 2024",p:"Revisión de ensayos aleatorizados: mejora de fuerza, función, dolor muscular, movilidad y discapacidad, sin efectos adversos importantes.",u:"https://archivosdemedicinadeldeporte.com/articulos/upload/or6_sanchez_lozano_ingles.pdf"},
+ {g:"c",t:"TECAR en dolor de columna",s:"Revisión sistemática, 2026",p:"Reducción del dolor y de la discapacidad a corto plazo en dolor raquídeo crónico, también mejor movilidad cervical. Los autores la consideran un complemento útil.",u:"https://www.jcdr.net/articles/PDF/24064/90859_AIHAS-CONCLAVE-2026_abs17.pdf"},
+ {g:"c",t:"Winback en trapecio y trastornos musculoesqueléticos laborales",s:"Estudio con Winback 3SE, 15 min de aplicación",p:"Estudio específico del equipo Winback sobre el trapecio. Los propios autores señalan que hay pocos estudios en esta zona.",u:"https://worldscientific.com/doi/10.1142/S0219519422400449"},
+ {g:"d",t:"Ensayo en curso: Back4 con Hi-EMS en lumbalgia crónica",s:"ClinicalTrials.gov NCT07821021",p:"Compara TECAR sola frente a TECAR con Hi-EMS: 10 min de CET seguidos de 10 min de RET, con Hi-EMS focal durante la fase RET y placa de retorno en el abdomen. Sin resultados publicados todavía.",u:"https://clinicaltrials.gov/study/NCT07821021"},
+ {g:"d",t:"Ensayo en curso: TECAR en síndrome subacromial",s:"ClinicalTrials.gov NCT06595641, Universidad de El Cairo",p:"Doble ciego: ejercicio de fuerza con o sin TECAR en pacientes con síndrome subacromial estadio I de Neer.",u:"https://clinicaltrials.gov/study/NCT06595641"},
+ {g:"d",t:"Visión crítica",s:"International Journal of Sports Physical Therapy, comentario clínico",p:"Señala resultados inconsistentes entre estudios y pide ensayos más rigurosos. Las guías reconocen los agentes físicos como complemento.",u:"https://ijspt.scholasticahq.com/article/130909"}
+];
+const GRADE = {b:"Evidencia moderada",c:"Evidencia baja",d:"En estudio / opinión"};
+
+const THRUST_EVI = [
+ ["Manipulación en lumbalgia crónica (Rubinstein, BMJ 2019)","spinal manipulative therapy chronic low back pain Rubinstein 2019"],
+ ["Regla de predicción lumbar (Flynn 2002; Childs 2004)","clinical prediction rule spinal manipulation low back pain Childs"],
+ ["Thrust torácico en dolor cervical (Cleland)","thoracic spine thrust manipulation neck pain Cleland"],
+ ["Marco IFOMPT para la región cervical (Rushton 2020/2023)","IFOMPT international framework cervical spine examination Rushton"],
+ ["Manipulación cervicotorácica en dolor de hombro (Mintken 2010)","Mintken cervicothoracic manipulation shoulder pain clinical prediction"],
+ ["Manipulación de tobillo en esguince de inversión (Whitman 2009)","Whitman thrust manipulation inversion ankle sprain"],
+ ["Movilización de cadera en artrosis de rodilla (Currier 2007)","Currier hip mobilization knee osteoarthritis clinical prediction"],
+ ["Terapia manual en artrosis de cadera (Hoeksma 2004)","Hoeksma manual therapy hip osteoarthritis randomized"]
+];
+
+const GENERAL_RED = [
+ ["Fractura",["Traumatismo importante","Osteoporosis o corticoides prolongados","Edad mayor de 70 años con dolor de inicio brusco"]],
+ ["Malignidad",["Antecedente de cáncer","Pérdida de peso inexplicada","Dolor nocturno constante que no cambia con la postura"]],
+ ["Infección",["Fiebre o escalofríos","Inmunosupresión","Cirugía o infección reciente","Consumo de drogas por vía parenteral"]],
+ ["Neurológico",["Cola de caballo: anestesia en silla de montar, alteración de esfínteres","Déficit motor progresivo","Signos de mielopatía"]],
+ ["Vascular",["Signos de las 5 D y 3 N en el cuello","Masa abdominal pulsátil con dolor lumbar (aneurisma)","Dolor torácico con esfuerzo, disnea o sudoración"]],
+ ["Contraindicaciones del thrust",["Anticoagulación sin control","Enfermedad inflamatoria activa","Inestabilidad ligamentosa conocida","Hipermovilidad o enfermedad del tejido conectivo","Paciente que no consiente o se muestra muy aprensivo"]]
+];
+
+/* ======================= UTILIDADES ======================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const store = {
+  get(k,d){try{const v=localStorage.getItem("atlas-"+k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("atlas-"+k,JSON.stringify(v))}catch(e){}}
+};
+let favs = new Set(store.get("favs",[]));
+let state = {region:"cervical", tab:"tests", tecarRegion:"cervical"};
+const techById = id => TECH.find(t=>t.id===id);
+const testByName = (reg,n) => REGIONS[reg].tests.find(t=>t.n===n) || Object.values(REGIONS).flatMap(r=>r.tests).find(t=>t.n===n);
+
+/* ======================= PICTOGRAMA ======================= */
+function pictogram(t){
+  const W=280,H=120, reg=t.reg;
+  const lx={cervical:.12,trapecio:.17,hombro:.2,pectoral:.24,dorsal:.27,codo:.33,muneca:.42,lumbar:.4,cadera:.5,rodilla:.72,tobillo:.92}[reg];
+  let fig="", tx, ty, table="";
+  if(t.pos==="supino"||t.pos==="prono"||t.pos==="lateral"){
+    const x0=30,x1=250, y=74;
+    table=`<line class="table" x1="18" y1="${y+16}" x2="262" y2="${y+16}"/><line class="table" x1="40" y1="${y+16}" x2="40" y2="${y+36}"/><line class="table" x1="240" y1="${y+16}" x2="240" y2="${y+36}"/>`;
+    if(t.pos==="lateral"){
+      fig=`<circle class="fig" cx="42" cy="${y-4}" r="12"/><rect class="fig" x="56" y="${y-12}" width="88" height="24" rx="11"/><path class="fig" d="M140 ${y-10} q34 -8 46 18 l-12 8 q-10 -16 -34 -10z"/><rect class="fig" x="150" y="${y+2}" width="96" height="12" rx="6"/>`;
+    } else {
+      fig=`<circle class="fig" cx="42" cy="${y}" r="12"/><rect class="fig" x="56" y="${y-12}" width="92" height="26" rx="11"/><rect class="fig" x="146" y="${y-9}" width="102" height="10" rx="5"/><rect class="fig" x="146" y="${y+3}" width="102" height="10" rx="5"/>`;
+      if(t.pos==="prono") fig+=`<rect x="34" y="${y+6}" width="16" height="4" rx="2" class="fig" style="fill-opacity:.9"/>`;
+    }
+    tx = x0 + (x1-x0)*lx; ty = y;
+  } else {
+    const yTop=14,yBot=104, x=140;
+    table=`<line class="table" x1="112" y1="${yTop+66}" x2="168" y2="${yTop+66}"/><line class="table" x1="120" y1="${yTop+66}" x2="120" y2="${yBot+6}"/><line class="table" x1="160" y1="${yTop+66}" x2="160" y2="${yBot+6}"/>`;
+    fig=`<circle class="fig" cx="${x}" cy="${yTop+8}" r="10"/><rect class="fig" x="${x-14}" y="${yTop+20}" width="28" height="44" rx="10"/><rect class="fig" x="${x-14}" y="${yTop+56}" width="44" height="11" rx="5"/><rect class="fig" x="${x+22}" y="${yTop+58}" width="10" height="40" rx="5"/>`;
+    const map={cervical:yTop+20,trapecio:yTop+24,hombro:yTop+26,pectoral:yTop+32,dorsal:yTop+36,lumbar:yTop+52,codo:yTop+44,muneca:yTop+58};
+    tx=x; ty=map[reg]??yTop+40;
+  }
+  let vec="";
+  const a=(x1,y1,x2,y2)=>{const ang=Math.atan2(y2-y1,x2-x1),h=7;return `<path class="vec" d="M${x1} ${y1} L${x2} ${y2}"/><path class="vech" d="M${x2} ${y2} L${x2-h*Math.cos(ang-0.5)} ${y2-h*Math.sin(ang-0.5)} L${x2-h*Math.cos(ang+0.5)} ${y2-h*Math.sin(ang+0.5)}z"/>`};
+  if(t.v==="down") vec=a(tx,ty-40,tx,ty-16);
+  if(t.v==="up") vec=a(tx-26,ty+6,tx-26,ty-20);
+  if(t.v==="long") vec = (t.pos==="sedest")? a(tx,ty-10,tx,ty-36) : a(tx-6,ty-26,tx+26,ty-26);
+  if(t.v==="lat") vec=a(tx-18,ty-26,tx+18,ty-26);
+  if(t.v==="rot") vec=`<path class="vec" d="M${tx-18} ${ty-22} A20 12 0 1 1 ${tx+16} ${ty-30}"/><path class="vech" d="M${tx+16} ${ty-30} l-8 -2 l3 8z"/>`;
+  const vlab={down:"PA / hacia camilla",up:"elevación",long:"tracción axial",lat:"traslación lateral",rot:"rotación"}[t.v];
+  return `<svg viewBox="0 0 ${W} ${H+16}" role="img" aria-label="${esc(POS[t.pos])}, impulso en ${vlab}">${table}${fig}<circle class="tgt" cx="${tx}" cy="${ty}" r="5"/>${vec}<text x="10" y="14">${POS[t.pos].toUpperCase()}</text><text x="${W-10}" y="14" text-anchor="end">${vlab}</text></svg>`;
+}
+
+/* ======================= VISTAS ======================= */
+function showView(v){
+  document.querySelectorAll(".view").forEach(s=>s.hidden = s.id!=="v-"+v);
+  document.querySelectorAll("nav.views button").forEach(b=>b.setAttribute("aria-current", b.dataset.view===v));
+  try{history.replaceState(null,"","#"+v)}catch(e){}
+  window.scrollTo({top:0});
+}
+document.querySelectorAll("nav.views button").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
+
+/* --- mapa --- */
+function bodySVG(view){
+  const sil=`<circle class="sil" cx="100" cy="30" r="20"/><rect class="sil" x="90" y="48" width="20" height="14"/><path class="sil" d="M58 64 Q100 54 142 64 L150 150 Q100 160 50 150 Z"/><path class="sil" d="M58 66 L40 140 L30 210 L42 212 L56 146 L66 96Z"/><path class="sil" d="M142 66 L160 140 L170 210 L158 212 L144 146 L134 96Z"/><path class="sil" d="M52 150 Q100 166 148 150 L146 190 Q100 200 54 190Z"/><path class="sil" d="M56 188 L96 192 L92 300 L88 380 L70 380 L66 300Z"/><path class="sil" d="M144 188 L104 192 L108 300 L112 380 L130 380 L134 300Z"/>`;
+  const Z = view==="front" ? [
+    ["pectoral",`<ellipse cx="100" cy="86" rx="32" ry="14"/>`,100,90],
+    ["hombro",`<circle cx="58" cy="70" r="13"/><circle cx="142" cy="70" r="13"/>`,0,0],
+    ["cadera",`<path d="M58 166 Q100 186 142 166 L140 194 Q100 204 60 194Z"/>`,100,184],
+    ["codo",`<circle cx="45" cy="138" r="9"/><circle cx="155" cy="138" r="9"/>`,0,0],
+    ["muneca",`<circle cx="33" cy="200" r="8"/><circle cx="167" cy="200" r="8"/>`,0,0],
+    ["rodilla",`<circle cx="79" cy="292" r="12"/><circle cx="121" cy="292" r="12"/>`,0,0],
+    ["tobillo",`<circle cx="79" cy="372" r="10"/><circle cx="121" cy="372" r="10"/>`,0,0]
+  ] : [
+    ["cervical",`<rect x="88" y="44" width="24" height="22" rx="8"/>`,0,0],
+    ["trapecio",`<path d="M66 66 Q80 56 92 60 L92 72 Q80 72 68 78Z"/><path d="M134 66 Q120 56 108 60 L108 72 Q120 72 132 78Z"/>`,0,0],
+    ["dorsal",`<rect x="80" y="80" width="40" height="44" rx="10"/>`,100,104],
+    ["lumbar",`<rect x="80" y="128" width="40" height="30" rx="10"/>`,100,146],
+    ["hombro",`<circle cx="58" cy="70" r="13"/><circle cx="142" cy="70" r="13"/>`,0,0]
+  ];
+  const zones = Z.map(([k,shape])=>`<g class="zone ${state.region===k?"on":""}" data-z="${k}" tabindex="0" role="button" aria-label="${REGIONS[k].name}">${shape}</g>`).join("");
+  return `<svg viewBox="0 0 200 392" aria-label="Vista ${view==="front"?"anterior":"posterior"}">${sil}${zones}</svg>`;
+}
+function renderMap(){
+  $("#bodymap").innerHTML = bodySVG("front")+bodySVG("back");
+  $("#bodymap").querySelectorAll(".zone").forEach(z=>{
+    const go=()=>{state.region=z.dataset.z;state.tab=state.tab||"tests";renderMap()};
+    z.addEventListener("click",go); z.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go()}});
+  });
+  $("#zonelist").innerHTML = Object.entries(REGIONS).map(([k,r])=>`<button class="chip" aria-pressed="${state.region===k}" data-z="${k}">${r.name}<span class="n">${TECH.filter(t=>t.reg===k).length}</span></button>`).join("");
+  $("#zonelist").querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>{state.region=c.dataset.z;renderMap()}));
+  renderFicha();
+}
+function relatedTech(reg){
+  const own = TECH.filter(t=>t.reg===reg);
+  const ids = new Set(REGIONS[reg].sym.flatMap(s=>s.tech));
+  const extra = TECH.filter(t=>ids.has(t.id) && t.reg!==reg);
+  return {own, extra};
+}
+function techMini(t){
+  return `<div class="test"><h4>${esc(t.n)} <span class="tag">${esc(t.seg)}</span> <span class="tag">${POS[t.pos]}</span></h4><p>${esc(t.steps[t.steps.length-1])}</p><p><a href="${yt(t.q)}" target="_blank" rel="noopener">Ver demostración en YouTube</a> · <button class="linkbtn" data-goto-tech="${t.id}">Abrir ficha completa</button></p></div>`;
+}
+function tecarBlock(reg, level){
+  const tc = REGIONS[reg].tecar;
+  const rows = (level==="moderado"?tc.moderado:tc.leve).map(([m,p,t,d])=>`<li><span class="mode">${esc(m)}</span><span class="mono" style="color:var(--muted)">${esc(t)}</span><span>${esc(d)}<br><span class="mono" style="color:var(--muted)">${esc(p)}</span></span></li>`).join("");
+  return `<ol class="seq">${rows}</ol>`;
+}
+function tecarSources(reg){
+  return `<p class="note" style="margin-top:8px">Basado en Winback Academy: ${REGIONS[reg].tecar.src.map(([n,s])=>`<a href="https://winback-academy.org/es/protocol/${s}/" target="_blank" rel="noopener">${esc(n)}</a>`).join(" · ")}</p>`;
+}
+function renderFicha(){
+  const reg=state.region, R=REGIONS[reg];
+  const tabs=[["tests","Evaluación"],["tech","Técnicas thrust"],["tecar","TECAR"],["imgs","Mis imágenes"],["red","Banderas rojas"]];
+  let body="";
+  if(state.tab==="tests") body = R.tests.map(t=>`<div class="test"><h4>${esc(t.n)}</h4><dl class="kv"><dt>Objetivo</dt><dd>${esc(t.o)}</dd><dt>Cómo</dt><dd>${esc(t.p)}</dd><dt>Positivo</dt><dd>${esc(t.r)}</dd></dl><p><a href="${yt(t.n+" test")}" target="_blank" rel="noopener">Ver en YouTube</a></p></div>`).join("");
+  if(state.tab==="tech"){
+    const {own,extra}=relatedTech(reg);
+    body = (own.length? own.map(techMini).join("") : `<p class="note">No hay técnicas thrust directas propias de esta región en la guía. Usa el abordaje regional:</p>`)
+      + (extra.length? `<h3 style="margin-top:16px">Abordaje regional útil</h3>${extra.map(techMini).join("")}`:"")
+      + `<h3 style="margin-top:16px">Alternativas sin thrust (nivel moderado)</h3><ul class="minilist">${R.alt.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>`;
+  }
+  if(state.tab==="tecar"){
+    const notes = store.get("notes-"+reg,"");
+    body = `<p class="note">${esc(R.tecar.placa)}</p>
+      <div class="heatbox" style="margin-top:10px"><h4><span class="lvl leve">Leve</span> Sesión combinada con thrust</h4>${tecarBlock(reg,"leve")}</div>
+      <div class="heatbox" style="margin-top:10px"><h4><span class="lvl moderado">Moderado</span> Sesión analgésica sin thrust</h4>${tecarBlock(reg,"moderado")}</div>
+      <p class="note" style="margin-top:10px"><b>Pauta:</b> ${esc(R.tecar.pauta)}</p>${tecarSources(reg)}
+      <label for="notes-${reg}" class="eyebrow" style="display:block;margin:14px 0 6px">Mis notas de Winback Academy para ${esc(R.name)}</label>
+      <textarea id="notes-${reg}" data-notes="${reg}" placeholder="Copia aquí el protocolo de Academy que uses para esta zona: modo, frecuencia, intensidad, tiempos…">${esc(notes)}</textarea>
+      <p class="note">Se guarda solo en este navegador.</p>`;
+  }
+  if(state.tab==="imgs") body = renderImages(reg);
+  if(state.tab==="red") body = `<div class="warnbar"><b>Si alguna está presente:</b> no hagas thrust ni TECAR. Deriva.</div><ul class="minilist" style="margin-top:12px">${R.red.map(r=>`<li>${esc(r)}</li>`).join("")}</ul><p class="note" style="margin-top:10px">Consulta también las banderas rojas generales en la vista Cribado.</p>`;
+  $("#ficha").innerHTML = `<span class="eyebrow">${esc(R.freq)} en consulta</span><h2>${esc(R.name)}</h2>
+    <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" class="${k==="tecar"?"heat":""}" aria-selected="${state.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>${body}`;
+  $("#ficha").querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{state.tab=b.dataset.tab;renderFicha()}));
+  bindCommon($("#ficha"));
+  if(state.tab==="imgs") bindImages(reg);
+}
+function bindCommon(root){
+  root.querySelectorAll("[data-goto-tech]").forEach(b=>b.addEventListener("click",()=>{
+    const t=techById(b.dataset.gotoTech); $("#f-reg").value=t.reg; $("#f-q").value=t.n; $("#f-pos").value=""; $("#f-pat").value=""; $("#f-fav").checked=false; renderCards(); showView("tecnicas");
+  }));
+  root.querySelectorAll("textarea[data-notes]").forEach(ta=>ta.addEventListener("input",()=>store.set("notes-"+ta.dataset.notes,ta.value)));
+}
+
+/* --- síntoma --- */
+let sym = {reg:"cervical", pat:"c-local", red:new Set(), irr:new Set(), neuro:false};
+const IRR = ["Dolor en reposo o nocturno que despierta al paciente","El dolor aparece con un movimiento mínimo y tarda más de 30 minutos en calmarse","Intensidad de 7 o más sobre 10","Espasmo protector intenso, el paciente no tolera la posición"];
+function renderSym(){
+  const R=REGIONS[sym.reg];
+  if(!R.sym.find(s=>s.id===sym.pat)) sym.pat=R.sym[0].id;
+  const P=R.sym.find(s=>s.id===sym.pat);
+  $("#sym-form").innerHTML = `
+   <div class="step"><span class="eyebrow"><b>1</b> · Zona</span><div class="zonelist" style="justify-content:flex-start;margin:0">${Object.entries(REGIONS).map(([k,r])=>`<button class="chip" data-sr="${k}" aria-pressed="${sym.reg===k}">${r.name}</button>`).join("")}</div></div>
+   <div class="step"><span class="eyebrow"><b>2</b> · Patrón de síntomas</span><div class="zonelist" style="justify-content:flex-start;margin:0">${R.sym.map(s=>`<button class="chip" data-sp="${s.id}" aria-pressed="${sym.pat===s.id}">${esc(s.n)}</button>`).join("")}</div></div>
+   <div class="step"><span class="eyebrow"><b>3</b> · Banderas rojas presentes</span><div class="checks">${R.red.map((r,i)=>`<label for="rf${i}"><input type="checkbox" id="rf${i}" data-rf="${i}" ${sym.red.has(i)?"checked":""}><span>${esc(r)}</span></label>`).join("")}</div></div>
+   <div class="step"><span class="eyebrow"><b>4</b> · Irritabilidad y neurología</span><div class="checks">${IRR.map((r,i)=>`<label for="ir${i}"><input type="checkbox" id="ir${i}" data-ir="${i}" ${sym.irr.has(i)?"checked":""}><span>${esc(r)}</span></label>`).join("")}
+     <label for="neuro"><input type="checkbox" id="neuro" ${sym.neuro?"checked":""}><span>Déficit neurológico: pérdida de fuerza, reflejos o sensibilidad en un territorio</span></label></div></div>`;
+  $("#sym-form").querySelectorAll("[data-sr]").forEach(b=>b.addEventListener("click",()=>{sym.reg=b.dataset.sr;sym.red.clear();renderSym()}));
+  $("#sym-form").querySelectorAll("[data-sp]").forEach(b=>b.addEventListener("click",()=>{sym.pat=b.dataset.sp;renderSym()}));
+  $("#sym-form").querySelectorAll("[data-rf]").forEach(c=>c.addEventListener("change",()=>{c.checked?sym.red.add(+c.dataset.rf):sym.red.delete(+c.dataset.rf);renderSymResult()}));
+  $("#sym-form").querySelectorAll("[data-ir]").forEach(c=>c.addEventListener("change",()=>{c.checked?sym.irr.add(+c.dataset.ir):sym.irr.delete(+c.dataset.ir);renderSymResult()}));
+  $("#neuro").addEventListener("change",e=>{sym.neuro=e.target.checked;renderSymResult()});
+  renderSymResult();
+}
+function renderSymResult(){
+  const R=REGIONS[sym.reg], P=R.sym.find(s=>s.id===sym.pat);
+  let level="leve", why=[];
+  if(sym.irr.size>=2){level="moderado";why.push("Irritabilidad alta")}
+  if(sym.neuro){ if(level==="leve") level="moderado"; why.push("Déficit neurológico: sin thrust en el segmento afectado")}
+  if(P.force==="moderado" && level==="leve"){level="moderado";why.push("Patrón que no se trata con thrust")}
+  if(P.force==="grave"){level="grave";why.push("Patrón que requiere derivación")}
+  if(sym.red.size){level="grave";why.unshift("Bandera roja presente")}
+  const title={leve:"Thrust indicado tras cribado",moderado:"Sin thrust en la zona: técnicas suaves",grave:"No tratar: derivar"}[level];
+  const tests = P.tests.map(n=>{const t=testByName(sym.reg,n);return `<li><b>${esc(n)}</b>${t?` — ${esc(t.r)}`:""}</li>`}).join("");
+  let treat="";
+  if(level==="leve"){
+    const ts=P.tech.map(techById).filter(Boolean);
+    treat = ts.length? `<h3 style="margin-top:14px">Técnicas recomendadas</h3><ul class="minilist">${ts.map(t=>`<li><button class="linkbtn" data-goto-tech="${t.id}">${esc(t.n)}</button> <span class="tag">${esc(t.seg)}</span> · <a href="${yt(t.q)}" target="_blank" rel="noopener">vídeo</a></li>`).join("")}</ul>`:"";
+  } else if(level==="moderado"){
+    const safe = P.tech.map(techById).filter(t=>t && t.reg!==sym.reg && sym.neuro);
+    treat = `<h3 style="margin-top:14px">Tratamiento sin thrust en la zona</h3><ul class="minilist">${R.alt.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>` + (safe.length?`<p class="note" style="margin-top:8px">Thrust a distancia aceptable si no reproduce síntomas: ${safe.map(t=>`<button class="linkbtn" data-goto-tech="${t.id}">${esc(t.n)}</button>`).join(", ")}</p>`:"");
+  } else {
+    treat = `<h3 style="margin-top:14px">Qué hacer</h3><ul class="minilist"><li>Detén la sesión de terapia manual y aparatología</li><li>Urgencia (cola de caballo, síntomas cardíacos, signos de las 5 D y 3 N, rotura completa): 112 o urgencias hospitalarias</li><li>Resto: derivación preferente al médico de familia o traumatólogo con informe de tus hallazgos</li><li>Retoma el tratamiento cuando se haya descartado la causa grave</li></ul>`;
+  }
+  const tecar = level==="grave" ? `<p class="note">TECAR contraindicada hasta aclarar la causa.</p>` : `<p class="note">${esc(R.tecar.placa)}</p>${tecarBlock(sym.reg,level)}${tecarSources(sym.reg)}`;
+  $("#sym-result").innerHTML = `<div class="panel">
+    <div class="verdict ${level}"><span class="lvl ${level}">${level[0].toUpperCase()+level.slice(1)}</span><h3>${title}</h3>${why.length?`<p>${why.map(esc).join(" · ")}</p>`:""}<p>${esc(P.note)}</p></div>
+    <h3>Tests a realizar</h3><ul class="minilist">${tests}</ul>
+    ${treat}
+    <div class="heatbox" style="margin-top:16px"><h4 style="color:var(--heat)">Winback TECAR</h4>${tecar}</div>
+  </div>`;
+  bindCommon($("#sym-result"));
+}
+
+/* --- técnicas --- */
+function fillFilters(){
+  $("#f-reg").innerHTML = `<option value="">Todas</option>`+Object.entries(REGIONS).map(([k,r])=>`<option value="${k}">${r.name}</option>`).join("");
+  $("#f-pos").innerHTML = `<option value="">Todas</option>`+Object.entries(POS).map(([k,p])=>`<option value="${k}">${p}</option>`).join("");
+  $("#f-pat").innerHTML = `<option value="">Todas</option>`+PAT_LIST.map(p=>`<option>${esc(p)}</option>`).join("");
+  ["#f-q","#f-reg","#f-pos","#f-pat","#f-fav"].forEach(s=>$(s).addEventListener(s==="#f-q"?"input":"change",renderCards));
+}
+function renderCards(){
+  const q=$("#f-q").value.trim().toLowerCase(), r=$("#f-reg").value, p=$("#f-pos").value, pa=$("#f-pat").value, f=$("#f-fav").checked;
+  const list = TECH.filter(t=>(!r||t.reg===r)&&(!p||t.pos===p)&&(!pa||t.pat.includes(pa))&&(!f||favs.has(t.id))&&(!q||(t.n+" "+t.seg+" "+t.pat.join(" ")).toLowerCase().includes(q)));
+  $("#f-count").textContent = list.length+" de "+TECH.length+" técnicas";
+  $("#cards").innerHTML = list.length ? list.map(t=>`<article class="tcard">
+    <div class="pic">${pictogram(t)}</div>
+    <div class="body"><span class="eyebrow">${REGIONS[t.reg].name} · ${esc(t.seg)}</span><h3>${esc(t.n)}</h3>
+      <div class="meta">${t.pat.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</div>
+      <details><summary>Pasos</summary><ol>${t.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></details>
+      <details><summary>Errores frecuentes</summary><ul>${t.err.map(s=>`<li>${esc(s)}</li>`).join("")}</ul></details>
+    </div>
+    <div class="foot"><a class="btnlink" href="${yt(t.q)}" target="_blank" rel="noopener">▶ YouTube</a><a class="btnlink" href="${pm(t.q.replace(/thrust|HVLA/g,'')+" manipulation")}" target="_blank" rel="noopener">PubMed</a><button class="fav" data-fav="${t.id}" aria-pressed="${favs.has(t.id)}" aria-label="Marcar como favorita">★</button></div>
+  </article>`).join("") : `<p class="note">Ninguna técnica coincide con los filtros. Prueba a quitar alguno.</p>`;
+  $("#cards").querySelectorAll("[data-fav]").forEach(b=>b.addEventListener("click",()=>{
+    const id=b.dataset.fav; favs.has(id)?favs.delete(id):favs.add(id); store.set("favs",[...favs]); b.setAttribute("aria-pressed",favs.has(id)); if($("#f-fav").checked) renderCards();
+  }));
+}
+
+/* --- tecar --- */
+function renderTecar(){
+  $("#tecar-zones").innerHTML = Object.entries(REGIONS).map(([k,r])=>`<button class="chip" aria-pressed="${state.tecarRegion===k}" data-tz="${k}">${r.name}</button>`).join("");
+  $("#tecar-zones").querySelectorAll("[data-tz]").forEach(b=>b.addEventListener("click",()=>{state.tecarRegion=b.dataset.tz;renderTecar()}));
+  const k=state.tecarRegion, R=REGIONS[k];
+  $("#tecar-detail").innerHTML = `<p class="note">${esc(R.tecar.placa)}</p>
+   <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:10px">
+    <div class="heatbox"><h4><span class="lvl leve">Leve</span> Combinada con thrust</h4>${tecarBlock(k,"leve")}</div>
+    <div class="heatbox"><h4><span class="lvl moderado">Moderado</span> Analgésica sin thrust</h4>${tecarBlock(k,"moderado")}</div>
+   </div>
+   <p class="note" style="margin-top:10px"><b>Pauta:</b> ${esc(R.tecar.pauta)}</p>${tecarSources(k)}
+   <label for="tnotes-${k}" class="eyebrow" style="display:block;margin:14px 0 6px">Mis notas de Winback Academy para ${esc(R.name)}</label>
+   <textarea id="tnotes-${k}" data-notes="${k}" placeholder="Modo, frecuencia, intensidad y tiempos del protocolo Academy…">${esc(store.get("notes-"+k,""))}</textarea>`;
+  bindCommon($("#tecar-detail"));
+}
+function renderEvidence(){
+  $("#evi").innerHTML = EVIDENCE.map(e=>`<article><span class="grade ${e.g}">${GRADE[e.g]}</span><h3>${esc(e.t)}</h3><span class="note">${esc(e.s)}</span><p>${esc(e.p)}</p><p><a href="${e.u}" target="_blank" rel="noopener">Ver fuente</a></p></article>`).join("")
+   + `<article><span class="grade b">Evidencia sobre thrust</span><h3>Estudios clave de manipulación</h3><p>Búsquedas directas en PubMed de los trabajos en los que se basan las indicaciones de la guía:</p><ul class="minilist">${THRUST_EVI.map(([n,q])=>`<li><a href="${pm(q)}" target="_blank" rel="noopener">${esc(n)}</a></li>`).join("")}</ul></article>`;
+}
+function renderRed(){
+  $("#redflags").innerHTML = GENERAL_RED.map(([h,l])=>`<div><h3>${esc(h)}</h3><ul>${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("");
+}
+
+/* ======================= BIBLIOTECA ACADEMY ======================= */
+const PROTO_LIB = [
+ {n:"Contracturas profundas",dev:"Back4",slug:"contracturas-profundas",ind:"Contracturas musculares profundas en cualquier región.",rows:[["RET + RET","RET 60% · Hi-TENS 2-5-25 · Hi-EMS Focal 30%","5′","Busca el punto motor; neutro fijo y segundo electrodo triangulando sobre la contractura (3 Body Zone Delta)"]]},
+ {n:"Lesión muscular",dev:"Back4",slug:"lesion-muscular",ind:"Rotura fibrilar o lesión muscular reciente.",rows:[["CET + CET","CET 40%","5′","Masaje para mejorar el metabolismo, calor confortable"],["RET + CET","RET 40% · CET 30% LOW · Hi-TENS 2 Hz · Hi-EMS Rehab+","5′","RET adhesivo y neutro adhesivo enmarcando la lesión"]]},
+ {n:"Fascitis plantar",dev:"Back4",slug:"fascitis-plantar",ind:"Dolor en la inserción calcánea de la fascia plantar.",rows:[["CET + CET","CET 50%","5′","Relajación del tríceps sural, calor suave"],["MIX","60% · Hi-TENS 25 Hz","3′","Inserciones del calcáneo, hipertermia para tratar la fibrosis"]]},
+ {n:"Codo de tenista",dev:"Back4",slug:"codo-de-tenista",ind:"Epicondilalgia lateral.",rows:[["CET + CET","CET 40%","3′","Masaje de agonistas y antagonistas del antebrazo"],["RET","RET 50% · Hi-TENS 25 Hz · Hi-EMS sin dolor+","2′","Liberar tensiones, calor suave"],["Hi-RET","Hi-TENS 5 Hz · Hi-EMS PushBack+","3′","Zona dolorosa, diatermia fuerte"]]},
+ {n:"Túnel carpiano",dev:"Back4",slug:"tunel-carpiano",ind:"Síndrome del túnel carpiano con fibrosis del retináculo.",rows:[["Hi-RET","RET 60% · Hi-TENS 2 Hz","3′","Retináculo flexor, hipertermia alternada con trabajo manual"],["Pulseras","RET 30% LOW","5′","Pulsera en el antebrazo del paciente y del terapeuta, movilización de muñeca"]]},
+ {n:"Tendinitis",dev:"General",slug:"tendinitis-y-tenosinovitis",ind:"Dolor tendinoso con puntos gatillo y fibrosis.",rows:[["MIX","Barrido","3′","Puntos gatillo y barrido muscular, retorno en el mismo lado"],["Electrodos","A ambos lados del tendón","2′","Sobre la zona fibrótica, alternando con desfibrosis manual"]]},
+ {n:"Tenosinovitis",dev:"General",slug:"tendinitis-y-tenosinovitis",ind:"Inflamación de la vaina tendinosa (por ejemplo, De Quervain).",rows:[["SWAP","2 s Hi-RET 66% / 2 s Hi-TENS+ 25 Hz","2′","Fase analgésica si hay dolor"],["MIX","Hi-RET 33–66% · Hi-TENS 2–3 Hz","3′","Reducir la inflamación del tendón"]]},
+ {n:"Entesopatías",dev:"General",slug:"entesopatias",ind:"Dolor en la inserción tendinosa en el hueso (epicóndilo, epitróclea, trocánter).",rows:[["Hi-RET","66% · barrido","2′","Barrido de la entesis"],["MIX","Hi-RET 66% · Hi-TENS 3 Hz","3′","Sobre los puntos dolorosos"]]},
+ {n:"Tendinosis",dev:"General",slug:"tendinopatias",ind:"Degeneración del cuerpo tendinoso con nódulos (Aquiles, rotuliano).",rows:[["RET","Calor fuerte o hipertermia","3–5′","Sobre la fibrosis del tendón"],["Ejercicio","—","—","Fortalecimiento excéntrico, con o sin vendaje"]]},
+ {n:"Síndrome miofascial",dev:"General",slug:"sindrome-miofascial-2",ind:"Dolor miofascial con puntos gatillo activos.",rows:[["Hi-TENS+","—","3′","Desensibilizar la zona miofascial y mejorar el trofismo de la fascia"],["SWAP","2 s Hi-RET 66% / 2 s Hi-TENS+ 25 Hz","3′","Barrido de la zona"]]}
+];
+function renderProtoLib(){
+  $("#protolib").innerHTML = PROTO_LIB.map(p=>`<div class="heatbox"><h4>${esc(p.n)} <span class="tag">${p.dev}</span></h4><p class="note" style="margin:0">${esc(p.ind)}</p><ol class="seq">${p.rows.map(([m,pa,t,d])=>`<li><span class="mode">${esc(m)}</span><span class="mono" style="color:var(--muted)">${esc(t)}</span><span>${esc(d)}<br><span class="mono" style="color:var(--muted)">${esc(pa)}</span></span></li>`).join("")}</ol><a class="note" href="https://winback-academy.org/es/protocol/${p.slug}/" target="_blank" rel="noopener">Ver en Winback Academy</a></div>`).join("");
+}
+
+/* ======================= VISCERAL ======================= */
+const VISC_RED = [
+ ["Urgencia",["Dolor abdominal agudo e intenso, abdomen en tabla","Signo de Blumberg positivo (rebote doloroso)","Masa abdominal pulsátil (aneurisma de aorta)","Vómitos con sangre o heces negras"]],
+ ["Derivación preferente",["Fiebre con dolor abdominal","Pérdida de peso inexplicada o cambio persistente del ritmo intestinal","Ictericia","Sangrado vaginal anómalo o sospecha de embarazo ectópico","Disuria, hematuria o dolor lumbar con fiebre (pielonefritis)"]],
+ ["Contraindicaciones locales",["Embarazo (técnicas abdominales directas)","Cirugía abdominal reciente","Hernia no reducible","Dispositivo intrauterino, sonda o catéter en la zona","Enfermedad inflamatoria intestinal activa"]]
+];
+const VISC_EVAL = [
+ {n:"Anamnesis visceral",p:"Relación del dolor con comidas, digestión, ritmo intestinal, micción, ciclo menstrual y postura.",r:"Un dolor que cambia con la función visceral y no con el movimiento sugiere origen visceral."},
+ {n:"Palpación por cuadrantes",p:"Supino con rodillas flexionadas. Palpación superficial y después profunda de los nueve cuadrantes.",r:"Defensa, dolor localizado o masa: valora derivación antes de tratar."},
+ {n:"Signo de Murphy",p:"Presión bajo el reborde costal derecho mientras el paciente inspira.",r:"Interrupción de la inspiración por dolor: sospecha de colecistitis, deriva."},
+ {n:"Punto de McBurney y signo de Rovsing",p:"Presión en el tercio externo de la línea ombligo–espina ilíaca derecha; presión en fosa ilíaca izquierda.",r:"Dolor en fosa ilíaca derecha: sospecha de apendicitis, deriva con urgencia."},
+ {n:"Puñopercusión renal (Giordano)",p:"Percusión suave con el puño sobre el ángulo costovertebral.",r:"Dolor intenso: sospecha de patología renal, deriva."},
+ {n:"Test de movilidad visceral",p:"Escucha manual y movilización suave del órgano en sus ejes, comparando con el lado contrario.",r:"Restricción de movilidad o tensión en una dirección. Validez y fiabilidad bajas: úsalo como orientación."}
+];
+const VISC_ORG = [
+ {n:"Diafragma",rel:"Cervicalgia (C3–C5), dolor dorsal bajo, respiración apical",t:"Liberación de los pilares y de las cúpulas en espiración; estiramiento costal inferior en supino.",c:"Bien tolerada; útil antes del thrust dorsal y cervical."},
+ {n:"Hígado",rel:"Dolor de hombro derecho, dorsal derecho (T7–T9)",t:"Elevación y bombeo hepático bajo el reborde costal derecho; movilización en lateroflexión izquierda.",c:"Evita en hepatopatía activa o hepatomegalia."},
+ {n:"Vesícula y conducto colédoco",rel:"Dolor escapular derecho",t:"Presión suave y mantenida en el punto cístico y drenaje en dirección al duodeno.",c:"No tratar si el signo de Murphy es positivo o hay cólico biliar."},
+ {n:"Estómago y unión gastroesofágica",rel:"Dolor dorsal medio, hombro izquierdo, reflujo",t:"Descenso suave del estómago desde la unión gastroesofágica; liberación del ángulo de His.",c:"Deriva si hay disfagia, pérdida de peso o sangrado."},
+ {n:"Intestino delgado (raíz del mesenterio)",rel:"Lumbalgia, tensión del psoas",t:"Movilización de la raíz del mesenterio desde la fosa ilíaca derecha hacia el cuadrante superior izquierdo.",c:"Evita en cirugía abdominal reciente."},
+ {n:"Colon y válvula ileocecal",rel:"Lumbalgia, dolor de cadera derecha o izquierda",t:"Movilización del ciego y del sigma; masaje del colon en sentido horario.",c:"No en enfermedad inflamatoria intestinal activa."},
+ {n:"Riñón",rel:"Lumbalgia, dolor inguinal, tensión del psoas",t:"Movilización del riñón en su eje con el paciente en supino y la cadera flexionada.",c:"No si la puñopercusión es positiva o hay fiebre."},
+ {n:"Vejiga y pelvis menor",rel:"Dolor sacro, pubalgia, coxigodinia",t:"Liberación suprapúbica y de los ligamentos umbilicales; trabajo del suelo pélvico externo.",c:"Evita en infección urinaria o embarazo."}
+];
+function renderVisceral(){
+  $("#visc-red").innerHTML = VISC_RED.map(([h,l])=>`<div><h3>${esc(h)}</h3><ul>${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("");
+  $("#visc-eval").innerHTML = VISC_EVAL.map(t=>`<div class="test"><h4>${esc(t.n)}</h4><dl class="kv"><dt>Cómo</dt><dd>${esc(t.p)}</dd><dt>Interpretación</dt><dd>${esc(t.r)}</dd></dl></div>`).join("");
+  $("#visc-org").innerHTML = VISC_ORG.map(o=>`<div class="organ"><h3>${esc(o.n)}</h3><dl class="kv"><dt>Relación</dt><dd>${esc(o.rel)}</dd><dt>Técnica</dt><dd>${esc(o.t)}</dd><dt>Precaución</dt><dd>${esc(o.c)}</dd></dl><p class="note" style="margin:0"><a href="${yt("visceral osteopathy "+o.n+" technique")}" target="_blank" rel="noopener">Buscar demostración en YouTube</a></p></div>`).join("");
+}
+
+/* ======================= INFANTIL ======================= */
+const INF_RED = [
+ ["Derivación urgente",["Fiebre en un lactante menor de 3 meses","Fontanela abombada, letargo o llanto inconsolable con decaimiento","Vómitos en escopetazo o biliosos","Rechazo de tomas, deshidratación o pérdida de peso"]],
+ ["Derivación al pediatra",["Tortícolis con masa no muscular, fiebre o alteración neurológica","Asimetría de movimientos de los miembros o pérdida de hitos del desarrollo","Cadera con limitación de abducción o asimetría de pliegues","Plagiocefalia con cresta ósea palpable (sospecha de craneosinostosis)"]],
+ ["Protección del menor",["Hematomas en un lactante que aún no se desplaza","Lesiones sin explicación coherente con la historia","Ante cualquier sospecha de maltrato, sigue el protocolo de tu comunidad y avisa a los servicios sociales o sanitarios"]]
+];
+const INF_EVAL = [
+ {n:"Anamnesis perinatal",p:"Embarazo, tipo de parto (instrumental, cesárea), posición fetal, peso al nacer, alimentación y sueño.",r:"Orienta a tortícolis, plagiocefalia o dificultades de succión."},
+ {n:"Rotación y lateroflexión cervical pasiva",p:"Supino. Rotación y lateroflexión pasivas muy suaves, comparando ambos lados.",r:"Asimetría de rotación: sospecha de tortícolis muscular congénita."},
+ {n:"Palpación del esternocleidomastoideo",p:"Palpación suave del vientre muscular en toda su longitud.",r:"Nódulo o cordón fibroso: tortícolis muscular congénita."},
+ {n:"Valoración de la forma craneal",p:"Vista superior del cráneo: aplanamiento occipital, desplazamiento de la oreja y la frente.",r:"Aplanamiento con oreja adelantada del mismo lado: plagiocefalia posicional. Cresta ósea: deriva."},
+ {n:"Cribado de cadera (Ortolani y Barlow)",p:"Lo realiza el pediatra en los primeros meses. Tú valora la abducción y la simetría de pliegues.",r:"Limitación o asimetría: deriva para valoración de displasia."},
+ {n:"Hitos del desarrollo motor",p:"Control cefálico, volteo, sedestación y gateo según la edad.",r:"Retraso o asimetría persistente: deriva al pediatra."}
+];
+const INF_CASES = [
+ {n:"Tortícolis muscular congénita",ev:"Buena evidencia para estiramiento y reposicionamiento precoz.",t:["Estiramiento suave del ECM en rotación y lateroflexión","Técnicas miofasciales del cuello y de la cintura escapular","Educación a los padres: posición en la cuna, porteo y juego hacia el lado limitado"],c:"Coordina con el pediatra y el fisioterapeuta pediátrico."},
+ {n:"Plagiocefalia posicional",ev:"El reposicionamiento y el tiempo boca abajo supervisado son la base. La terapia manual es complementaria.",t:["Tratar la tortícolis asociada si existe","Técnicas craneales y miofasciales suaves","Pauta de cambios de posición y tiempo boca abajo despierto"],c:"Si no mejora o hay cresta ósea, deriva para descartar craneosinostosis."},
+ {n:"Cólico del lactante",ev:"Evidencia baja: algunos estudios muestran menos tiempo de llanto con terapia manual, pero con riesgo de sesgo.",t:["Masaje abdominal suave en sentido horario","Técnicas diafragmáticas suaves","Pautas de toma, eructo y posición"],c:"Descarta antes alergia a la proteína de leche, reflujo patológico y otras causas con el pediatra."},
+ {n:"Dificultades de succión",ev:"Evidencia limitada; trabaja junto a la matrona o la consultora de lactancia.",t:["Técnicas suaves de la musculatura masticatoria y del suelo de la boca","Liberación miofascial cervical","Valoración del frenillo por el profesional correspondiente"],c:"Si hay pérdida de peso, deriva."},
+ {n:"Niño mayor: dolor musculoesquelético",ev:"Igual que en adultos, la base es el ejercicio y la educación.",t:["Movilización suave y tejidos blandos","Ejercicio y control postural","Valoración de mochila, deporte y pantallas"],c:"Dolor nocturno, cojera o fiebre: deriva. Sin thrust."}
+];
+function renderInfantil(){
+  $("#inf-red").innerHTML = INF_RED.map(([h,l])=>`<div><h3>${esc(h)}</h3><ul>${l.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("");
+  $("#inf-eval").innerHTML = INF_EVAL.map(t=>`<div class="test"><h4>${esc(t.n)}</h4><dl class="kv"><dt>Cómo</dt><dd>${esc(t.p)}</dd><dt>Interpretación</dt><dd>${esc(t.r)}</dd></dl></div>`).join("");
+  $("#inf-cases").innerHTML = INF_CASES.map(o=>`<div class="organ"><h3>${esc(o.n)}</h3><p class="note" style="margin:0">${esc(o.ev)}</p><ul class="minilist">${o.t.map(x=>`<li>${esc(x)}</li>`).join("")}</ul><p style="margin:0;font-size:.9rem"><b>Precaución:</b> ${esc(o.c)}</p><p class="note" style="margin:0"><a href="${pm(o.n.replace("del lactante","infant").replace("Tortícolis muscular congénita","congenital muscular torticollis").replace("Plagiocefalia posicional","positional plagiocephaly").replace("Cólico","infant colic manual therapy"))}" target="_blank" rel="noopener">Evidencia en PubMed</a></p></div>`).join("");
+}
+
+/* ======================= ALMACENAMIENTO ======================= */
+let DB=null, ASSETS=null, cloud=false;
+let IMAGES=[], FORM=[];
+const IDB = {
+  open(){return new Promise((res,rej)=>{try{const r=indexedDB.open("atlas-thrust",1);r.onupgradeneeded=()=>{r.result.createObjectStore("imgs",{keyPath:"id"});r.result.createObjectStore("docs",{keyPath:"id"})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
+  async all(st){const d=await this.open();return new Promise((res,rej)=>{const q=d.transaction(st).objectStore(st).getAll();q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})},
+  async put(st,v){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction(st,"readwrite");t.objectStore(st).put(v);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})},
+  async del(st,id){const d=await this.open();return new Promise((res,rej)=>{const t=d.transaction(st,"readwrite");t.objectStore(st).delete(id);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+};
+const blobUrls = new Map();
+function imgSrc(r){ if(r.assetId) return "/_blob/"+r.assetId; if(r.blob){ if(!blobUrls.has(r.id)) blobUrls.set(r.id,URL.createObjectURL(r.blob)); return blobUrls.get(r.id)} return "" }
+async function shrink(file){
+  if(!file.type.startsWith("image/")||file.type==="image/svg+xml") return file;
+  try{
+    const bmp = await createImageBitmap(file); const max=1600, k=Math.min(1,max/Math.max(bmp.width,bmp.height));
+    const c=document.createElement("canvas"); c.width=Math.round(bmp.width*k); c.height=Math.round(bmp.height*k);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    return await new Promise(r=>c.toBlob(b=>r(b||file),"image/jpeg",.85));
+  }catch(e){return file}
+}
+async function loadLocal(){
+  try{ IMAGES = await IDB.all("imgs"); FORM = await IDB.all("docs"); }catch(e){ IMAGES=[]; FORM=[]; }
+  refreshStored();
+}
+function refreshStored(){ if(state.tab==="imgs") renderFicha(); renderFormacion(); }
+async function initStorage(){
+  await loadLocal();
+  return; let tries=0; while(!(window.claude&&window.claude.use) && tries<30){ await new Promise(r=>setTimeout(r,100)); tries++; }
+  if(!(window.claude&&window.claude.use)) return;
+  try{ [DB,ASSETS] = await Promise.all([window.claude.use("db"),window.claude.use("assets")]); }catch(e){ DB=null; ASSETS=null; }
+  if(!DB) return;
+  cloud = true;
+  DB.collection("imagenes").onSnapshot(sn=>{ IMAGES = sn.docs.map(d=>({id:d.id,...d.data()})); if(state.tab==="imgs") renderFicha(); }, ()=>{});
+  DB.collection("formacion").onSnapshot(sn=>{ FORM = sn.docs.map(d=>({id:d.id,...d.data()})); renderFormacion(); }, ()=>{});
+}
+async function saveImage(region,file,caption){
+  const blob = await shrink(file);
+  if(cloud && ASSETS){
+    const up = await ASSETS.upload(blob);
+    await DB.collection("imagenes").add({region,assetId:up.id,caption,createdAt:Date.now()});
+  } else if(cloud){ throw {message:"Tu cuenta no permite subir archivos a esta página."}; }
+  else { const r={id:"i"+Date.now(),region,caption,createdAt:Date.now(),blob}; await IDB.put("imgs",r); IMAGES.push(r); renderFicha(); }
+}
+async function deleteImage(r){
+  if(cloud){ if(r.assetId && ASSETS){ try{await ASSETS.delete(r.assetId)}catch(e){} } await DB.collection("imagenes").doc(r.id).delete(); }
+  else { await IDB.del("imgs",r.id); IMAGES=IMAGES.filter(x=>x.id!==r.id); renderFicha(); }
+}
+function storageNote(){ return "Se guardan en este dispositivo y funcionan sin conexión. Para pasarlas a otro dispositivo, usa la copia de seguridad de la vista Formación."; }
+function renderImages(reg){
+  const list = IMAGES.filter(i=>i.region===reg).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  return `<div class="uploader">
+      <label class="field" for="img-file" style="flex:1 1 200px">Foto o imagen<input id="img-file" type="file" accept="image/*" multiple></label>
+      <input id="img-cap" type="text" placeholder="Descripción: técnica, paciente anónimo, posición…" aria-label="Descripción de la imagen">
+      <button class="btn" id="img-add" type="button">Añadir</button>
+    </div>
+    <p class="status" id="img-status">${storageNote()} No subas fotos en las que se pueda identificar a un paciente sin su consentimiento.</p>
+    ${list.length? `<div class="gallery">${list.map(i=>`<figure><img src="${imgSrc(i)}" alt="${esc(i.caption||"Imagen de "+REGIONS[reg].name)}" data-big="${i.id}" loading="lazy"><figcaption><span>${esc(i.caption||"Sin descripción")}</span><button class="mini" data-del="${i.id}">Eliminar</button></figcaption></figure>`).join("")}</div>`
+      : `<p class="note" style="margin-top:12px">Aún no hay imágenes de ${esc(REGIONS[reg].name)}. Añade fotos de tus técnicas, esquemas o apuntes para tenerlas a mano en la ficha.</p>`}`;
+}
+function bindImages(reg){
+  const add=$("#img-add"); if(!add) return;
+  add.addEventListener("click",async()=>{
+    const files=[...$("#img-file").files]; const cap=$("#img-cap").value.trim();
+    if(!files.length){$("#img-status").textContent="Elige al menos una imagen.";return}
+    add.disabled=true; $("#img-status").textContent="Subiendo…";
+    try{ for(const f of files) await saveImage(reg,f,cap); $("#img-status").textContent="Imagen guardada."; $("#img-file").value=""; $("#img-cap").value=""; }
+    catch(e){ $("#img-status").textContent="No se pudo guardar: "+(e&&e.message?e.message:"inténtalo de nuevo."); }
+    add.disabled=false;
+  });
+  $("#ficha").querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async()=>{
+    if(b.dataset.armed){ const r=IMAGES.find(x=>x.id===b.dataset.del); b.disabled=true; try{await deleteImage(r)}catch(e){b.disabled=false;b.textContent="Error"} }
+    else { b.dataset.armed="1"; b.textContent="¿Seguro?"; b.classList.add("danger"); setTimeout(()=>{ if(b.isConnected){delete b.dataset.armed;b.textContent="Eliminar";b.classList.remove("danger")} },4000); }
+  }));
+  $("#ficha").querySelectorAll("[data-big]").forEach(im=>im.addEventListener("click",()=>{
+    const lb=document.createElement("div"); lb.className="lightbox"; lb.innerHTML=`<div><img src="${im.src}" alt="${esc(im.alt)}"><p>${esc(im.alt)}</p></div>`;
+    lb.addEventListener("click",()=>lb.remove()); document.body.appendChild(lb);
+  }));
+}
+
+/* ======================= FORMACION ======================= */
+const FO_CATS = ["Osteopatía estructural","Osteopatía visceral","Osteopatía craneal e infantil","Tecarterapia Winback","Masaje y terapia manual","Evidencia y artículos","Otros"];
+const FO_TIPOS = ["Curso","Documento","Guía","Vídeo","Artículo","Enlace"];
+const FO_REF = [
+ ["Winback Academy: protocolos y formaciones","https://winback-academy.org/es/"],
+ ["PubMed: manipulación vertebral, revisiones sistemáticas","https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent("spinal manipulation systematic review")],
+ ["PubMed: osteopatía visceral","https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent("visceral osteopathy")],
+ ["PubMed: terapia manual pediátrica","https://pubmed.ncbi.nlm.nih.gov/?term="+encodeURIComponent("manual therapy infants systematic review")],
+ ["PEDro: base de datos de fisioterapia basada en la evidencia","https://pedro.org.au/spanish/"]
+];
+async function saveForm(rec,file){
+  if(file){
+    if(cloud && ASSETS){ const up=await ASSETS.upload(file); rec.assetId=up.id; rec.fileName=file.name; }
+    else if(!cloud){ rec.blob=file; rec.fileName=file.name; }
+    else throw {message:"Tu cuenta no permite adjuntar archivos a esta página."};
+  }
+  rec.createdAt=Date.now();
+  if(cloud) await DB.collection("formacion").add(rec);
+  else { rec.id="f"+Date.now(); await IDB.put("docs",rec); FORM.push(rec); renderFormacion(); }
+}
+async function deleteForm(r){
+  if(cloud){ if(r.assetId&&ASSETS){try{await ASSETS.delete(r.assetId)}catch(e){}} await DB.collection("formacion").doc(r.id).delete(); }
+  else { await IDB.del("docs",r.id); FORM=FORM.filter(x=>x.id!==r.id); renderFormacion(); }
+}
+function initFormacion(){
+  $("#fo-cat").innerHTML = FO_CATS.map(c=>`<option>${c}</option>`).join("");
+  $("#fo-tipo").innerHTML = FO_TIPOS.map(c=>`<option>${c}</option>`).join("");
+  $("#fo-fcat").innerHTML = `<option value="">Todas</option>`+FO_CATS.map(c=>`<option>${c}</option>`).join("");
+  $("#fo-ref").innerHTML = FO_REF.map(([n,u])=>`<li><a href="${u}" target="_blank" rel="noopener">${esc(n)}</a></li>`).join("");
+  $("#fo-q").addEventListener("input",renderFormacion); $("#fo-fcat").addEventListener("change",renderFormacion);
+  $("#fo-form").addEventListener("submit",async e=>{
+    e.preventDefault(); const btn=$("#fo-save"); btn.disabled=true; $("#fo-status").textContent="Guardando…";
+    const link=$("#fo-link").value.trim();
+    const rec={titulo:$("#fo-titulo").value.trim(),categoria:$("#fo-cat").value,tipo:$("#fo-tipo").value,enlace:/^https?:\/\//.test(link)?link:"",notas:$("#fo-notas").value.trim()};
+    try{ await saveForm(rec,$("#fo-file").files[0]); $("#fo-form").reset(); $("#fo-status").textContent="Recurso guardado."; }
+    catch(err){ $("#fo-status").textContent="No se pudo guardar: "+(err&&err.message?err.message:"inténtalo de nuevo."); }
+    btn.disabled=false;
+  });
+}
+function renderFormacion(){
+  if(!$("#fo-list")) return;
+  const q=$("#fo-q").value.trim().toLowerCase(), fc=$("#fo-fcat").value;
+  const list=FORM.filter(r=>(!fc||r.categoria===fc)&&(!q||((r.titulo||"")+" "+(r.notas||"")).toLowerCase().includes(q))).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  $("#fo-count").textContent = list.length+" recursos";
+  const cats = fc?[fc]:FO_CATS;
+  $("#fo-list").innerHTML = cats.map(c=>{
+    const items=list.filter(r=>r.categoria===c);
+    return `<div class="panel"><h2>${esc(c)} <span class="count">${items.length}</span></h2><div style="margin-top:8px">${items.length? items.map(r=>{
+      const fileHref = r.assetId? "/_blob/"+r.assetId : (r.blob? imgSrc(r):"");
+      return `<div class="course"><div class="row"><span class="tag">${esc(r.tipo||"")}</span><b>${esc(r.titulo||"Sin título")}</b><button class="mini" data-fdel="${r.id}" style="margin-left:auto">Eliminar</button></div>${r.notas?`<p style="margin:0;font-size:.92rem;white-space:pre-wrap">${esc(r.notas)}</p>`:""}<div class="row" style="font-size:.88rem">${r.enlace?`<a href="${esc(r.enlace)}" target="_blank" rel="noopener">Abrir enlace</a>`:""}${fileHref?`<a href="${fileHref}" target="_blank" rel="noopener">Ver documento${r.fileName?": "+esc(r.fileName):""}</a>`:""}</div></div>`}).join("")
+      : `<p class="note">Sin recursos todavía en esta área.</p>`}</div></div>`;
+  }).join("") + `<p class="status">${storageNote()}</p>`;
+  $("#fo-list").querySelectorAll("[data-fdel]").forEach(b=>b.addEventListener("click",async()=>{
+    if(b.dataset.armed){ b.disabled=true; try{await deleteForm(FORM.find(x=>x.id===b.dataset.fdel))}catch(e){b.disabled=false;b.textContent="Error"} }
+    else { b.dataset.armed="1"; b.textContent="¿Seguro?"; b.classList.add("danger"); setTimeout(()=>{ if(b.isConnected){delete b.dataset.armed;b.textContent="Eliminar";b.classList.remove("danger")} },4000); }
+  }));
+}
+
+/* ======================= COPIA DE SEGURIDAD ======================= */
+const toB64 = b => new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
+const fromB64 = async d => (await fetch(d)).blob();
+async function exportBackup(){
+  const st=$("#bk-status"); st.textContent="Preparando copia…";
+  try{
+    const ls={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k.startsWith("atlas-")) ls[k]=localStorage.getItem(k)}
+    const imgs=await Promise.all((await IDB.all("imgs")).map(async r=>({...r,blob:undefined,data:r.blob?await toB64(r.blob):null})));
+    const docs=await Promise.all((await IDB.all("docs")).map(async r=>({...r,blob:undefined,data:r.blob?await toB64(r.blob):null})));
+    const out=JSON.stringify({app:"atlas-thrust",version:1,fecha:new Date().toISOString(),localStorage:ls,imgs,docs});
+    const url=URL.createObjectURL(new Blob([out],{type:"application/json"}));
+    const a=document.createElement("a"); a.href=url; a.download="atlas-thrust-copia-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    st.textContent="Copia exportada: "+imgs.length+" imágenes y "+docs.length+" recursos.";
+  }catch(e){ st.textContent="No se pudo exportar la copia."; }
+}
+async function importBackup(file){
+  const st=$("#bk-status"); st.textContent="Importando…";
+  try{
+    const d=JSON.parse(await file.text()); if(d.app!=="atlas-thrust") throw 0;
+    for(const [k,v] of Object.entries(d.localStorage||{})) try{localStorage.setItem(k,v)}catch(e){}
+    for(const r of d.imgs||[]){ const {data,...rest}=r; if(data) rest.blob=await fromB64(data); await IDB.put("imgs",rest); }
+    for(const r of d.docs||[]){ const {data,...rest}=r; if(data) rest.blob=await fromB64(data); await IDB.put("docs",rest); }
+    st.textContent="Copia importada. Recargando…"; setTimeout(()=>location.reload(),800);
+  }catch(e){ st.textContent="El archivo no es una copia válida del Atlas."; }
+}
+$("#bk-export").addEventListener("click",exportBackup);
+$("#bk-import").addEventListener("change",e=>{ if(e.target.files[0]) importBackup(e.target.files[0]); });
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
+
+/* ======================= INICIO ======================= */
+fillFilters(); renderMap(); renderSym(); renderCards(); renderTecar(); renderEvidence(); renderRed();
+renderProtoLib(); renderVisceral(); renderInfantil(); initFormacion(); renderFormacion(); initStorage();
+const start = (location.hash||"").replace("#","");
+showView(["mapa","sintoma","tecnicas","tecar","visceral","infantil","formacion","cribado"].includes(start)?start:"mapa");
+</script>
+
+</body>
+</html>
