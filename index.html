@@ -188,6 +188,36 @@ textarea{width:100%;min-height:90px;font:inherit;font-size:.93rem;padding:10px;b
 .course:first-child{border-top:0}
 .course .row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .status{font-size:.82rem;color:var(--muted)}
+.ptfig{display:grid;gap:14px;align-content:start}
+.ptfig figure{margin:0;display:grid;gap:6px}
+.ptfig svg{width:100%;height:auto;max-height:560px;display:block}
+.ptfig .sil{fill:var(--sunk);stroke:var(--line);stroke-width:1.5}
+.ptfig .guide{stroke:var(--muted);stroke-dasharray:3 4;stroke-width:1;fill:none;opacity:.6}
+.ptfig .pt{fill:var(--accent);stroke:var(--surface);stroke-width:1.5;cursor:pointer}
+.ptfig .pt.on{fill:var(--heat)}
+.ptfig .ashi{fill:var(--accent);fill-opacity:.12;stroke:var(--accent);stroke-dasharray:3 2;cursor:pointer}
+.ptfig .pair{stroke:var(--heat);stroke-width:2;stroke-dasharray:5 3}
+.ptfig text{font:600 9px var(--f-mono);fill:var(--ink)}
+.ptfig text.on{fill:var(--heat)}
+.ptfig text.lbl{fill:var(--muted);font-weight:500;font-size:8px}
+.rz{fill:var(--accent);fill-opacity:.14;stroke:var(--accent);stroke-width:1;cursor:pointer}
+.rzl{stroke:var(--accent);stroke-opacity:.35;stroke-width:8;fill:none;stroke-linecap:round;cursor:pointer}
+.rz.hl{fill:var(--heat);fill-opacity:.35;stroke:var(--heat)}
+.rzl.hl{stroke:var(--heat);stroke-opacity:.6}
+.rz.on{fill-opacity:.7}
+.rzl.on{stroke-opacity:.95}
+.ptfig .rznum{font:600 8px var(--f-mono);fill:var(--ink);pointer-events:none;text-anchor:middle}
+.zlist{columns:2 210px;column-gap:18px;margin:0;padding:0;list-style:none}
+.zlist li{break-inside:avoid;margin:0 0 2px}
+.zlist button{border:0;background:none;text-align:left;padding:4px 6px;border-radius:5px;cursor:pointer;font-size:.92rem;display:flex;gap:8px;width:100%}
+.zlist button.hl{color:var(--heat);font-weight:600}
+.zlist button.on{background:var(--accent-soft)}
+.zlist .num{font:600 .75rem var(--f-mono);color:var(--muted);min-width:18px}
+.ptcode{font:600 .78rem var(--f-mono);background:var(--accent-soft);color:var(--accent);padding:1px 6px;border-radius:4px}
+.ptc{cursor:pointer;border-radius:8px;padding:10px;margin:0 -10px;display:grid;gap:4px;border-top:1px solid var(--line)}
+.ptc:first-child{border-top:0}
+.ptc h4{margin:0;font-size:1rem}
+.ptc.on{background:var(--accent-soft);border-top-color:transparent}
 footer{color:var(--muted);font-size:.85rem;padding-block:24px;border-top:1px solid var(--line)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -200,6 +230,7 @@ footer{color:var(--muted);font-size:.85rem;padding-block:24px;border-top:1px sol
       <button data-view="sintoma">Por síntoma</button>
       <button data-view="tecnicas">Técnicas</button>
       <button data-view="tecar" class="heat">Tecarterapia</button>
+      <button data-view="puntos">Puntos</button>
       <button data-view="visceral">Visceral</button>
       <button data-view="infantil">Infantil</button>
       <button data-view="formacion">Formación</button>
@@ -400,6 +431,17 @@ footer{color:var(--muted);font-size:.85rem;padding-block:24px;border-top:1px sol
     <h2>Recursos de referencia</h2>
     <ul class="minilist" id="fo-ref"></ul>
   </div>
+</section>
+
+<!-- PUNTOS -->
+<section class="view" id="v-puntos" hidden>
+  <div>
+    <span class="eyebrow">Acupresión · reflexología · electroacupuntura</span>
+    <h1>Puntos y zonas reflejas</h1>
+    <p class="lede">Puntos de acupresión shiatsu y de electroacupuntura para tus patologías más frecuentes, y mapa de reflexología podal en cuatro vistas. Toca un punto o una zona para ver su localización y cómo trabajarla.</p>
+  </div>
+  <div class="tabs" role="tablist" id="pt-tabs" style="margin:0"></div>
+  <div id="pt-body" class="view"></div>
 </section>
 
 <!-- CRIBADO -->
@@ -848,7 +890,8 @@ function tecarSources(reg){
 }
 function renderFicha(){
   const reg=state.region, R=REGIONS[reg];
-  const tabs=[["tests","Evaluación"],["tech","Técnicas thrust"],["tecar","TECAR"],["imgs","Mis imágenes"],["red","Banderas rojas"]];
+  if(state.tab==="pts" && !PT_REGION[reg]) state.tab="tests";
+  const tabs=[["tests","Evaluación"],["tech","Técnicas thrust"],["tecar","TECAR"]].concat(PT_REGION[reg]?[["pts","Puntos"]]:[]).concat([["imgs","Mis imágenes"],["red","Banderas rojas"]]);
   let body="";
   if(state.tab==="tests") body = R.tests.map(t=>`<div class="test"><h4>${esc(t.n)}</h4><dl class="kv"><dt>Objetivo</dt><dd>${esc(t.o)}</dd><dt>Cómo</dt><dd>${esc(t.p)}</dd><dt>Positivo</dt><dd>${esc(t.r)}</dd></dl><p><a href="${yt(t.n+" test")}" target="_blank" rel="noopener">Ver en YouTube</a></p></div>`).join("");
   if(state.tab==="tech"){
@@ -868,12 +911,14 @@ function renderFicha(){
       <p class="note">Se guarda solo en este navegador.</p>`;
   }
   if(state.tab==="imgs") body = renderImages(reg);
+  if(state.tab==="pts") body = renderPtsTab(reg);
   if(state.tab==="red") body = `<div class="warnbar"><b>Si alguna está presente:</b> no hagas thrust ni TECAR. Deriva.</div><ul class="minilist" style="margin-top:12px">${R.red.map(r=>`<li>${esc(r)}</li>`).join("")}</ul><p class="note" style="margin-top:10px">Consulta también las banderas rojas generales en la vista Cribado.</p>`;
   $("#ficha").innerHTML = `<span class="eyebrow">${esc(R.freq)} en consulta</span><h2>${esc(R.name)}</h2>
     <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" class="${k==="tecar"?"heat":""}" aria-selected="${state.tab===k}" data-tab="${k}">${l}</button>`).join("")}</div>${body}`;
   $("#ficha").querySelectorAll("[data-tab]").forEach(b=>b.addEventListener("click",()=>{state.tab=b.dataset.tab;renderFicha()}));
   bindCommon($("#ficha"));
   if(state.tab==="imgs") bindImages(reg);
+  $("#ficha").querySelectorAll("[data-gopts]").forEach(b=>b.addEventListener("click",()=>gotoPuntos(b.dataset.gopts)));
 }
 function bindCommon(root){
   root.querySelectorAll("[data-goto-tech]").forEach(b=>b.addEventListener("click",()=>{
@@ -1191,6 +1236,265 @@ function renderFormacion(){
   }));
 }
 
+/* ======================= PUNTOS: ACUPRESIÓN, REFLEXOLOGÍA, ELECTROACUPUNTURA ======================= */
+const FIGS = {
+ cuello:{vb:"0 0 200 200",t:"Cuello y hombros, vista posterior",sil:`
+  <path class="sil" d="M40 0 L160 0 L160 46 Q100 78 40 46 Z"/>
+  <rect class="sil" x="70" y="48" width="60" height="96" rx="14"/>
+  <path class="sil" d="M6 200 L6 168 Q26 138 74 130 L126 130 Q174 138 194 168 L194 200 Z"/>
+  <line class="guide" x1="100" y1="60" x2="100" y2="200"/>
+  <text class="lbl" x="166" y="40">occipital</text><text class="lbl" x="152" y="196">hombro</text>`},
+ post:{vb:"0 0 220 460",t:"Espalda, pelvis y pierna, vista posterior",sil:`
+  <circle class="sil" cx="110" cy="36" r="22"/><rect class="sil" x="101" y="56" width="18" height="16"/>
+  <path class="sil" d="M70 76 Q110 66 150 76 L156 150 Q150 200 152 242 L68 242 Q70 200 64 150 Z"/>
+  <path class="sil" d="M70 78 L52 150 L46 230 L56 232 L64 160 L74 110 Z"/><path class="sil" d="M150 78 L168 150 L174 230 L164 232 L156 160 L146 110 Z"/>
+  <path class="sil" d="M68 238 L108 238 L104 330 L102 442 L84 442 L80 330 Z"/><path class="sil" d="M152 238 L112 238 L116 330 L118 442 L136 442 L140 330 Z"/>
+  <line class="guide" x1="110" y1="80" x2="110" y2="236"/><line class="guide" x1="68" y1="258" x2="152" y2="258"/>
+  <text class="lbl" x="4" y="180">izq.</text><text class="lbl" x="196" y="180">der.</text>`},
+ mano:{vb:"0 0 320 340",t:"Antebrazo y mano: dorso (izquierda) y palma (derecha)",sil:`
+  <path class="sil" d="M45 10 L105 10 L95 210 L55 210 Z"/><rect class="sil" x="50" y="206" width="52" height="74" rx="12"/>
+  <rect class="sil" x="52" y="276" width="10" height="48" rx="5"/><rect class="sil" x="64" y="276" width="10" height="54" rx="5"/><rect class="sil" x="76" y="276" width="10" height="52" rx="5"/><rect class="sil" x="88" y="276" width="10" height="44" rx="5"/>
+  <path class="sil" d="M52 226 Q30 240 24 270 L34 274 Q42 252 58 244 Z"/>
+  <path class="sil" d="M210 10 L270 10 L260 210 L220 210 Z"/><rect class="sil" x="213" y="206" width="52" height="74" rx="12"/>
+  <rect class="sil" x="215" y="276" width="10" height="44" rx="5"/><rect class="sil" x="227" y="276" width="10" height="52" rx="5"/><rect class="sil" x="239" y="276" width="10" height="54" rx="5"/><rect class="sil" x="251" y="276" width="10" height="48" rx="5"/>
+  <path class="sil" d="M263 226 Q285 240 291 270 L281 274 Q273 252 257 244 Z"/>
+  <line class="guide" x1="55" y1="210" x2="95" y2="210"/><line class="guide" x1="220" y1="210" x2="260" y2="210"/>
+  <text class="lbl" x="56" y="6">DORSO</text><text class="lbl" x="222" y="6">PALMA</text>
+  <text class="lbl" x="2" y="200">radial</text><text class="lbl" x="104" y="200">cubital</text><text class="lbl" x="180" y="200">cubital</text><text class="lbl" x="284" y="200">radial</text>
+  <text class="lbl" x="2" y="30">codo</text>`}
+};
+const PT = {
+ GB20:{c:"GB20",n:"Fengchi",es:"Estanque del viento",fig:"cuello",xy:[[78,66],[122,66]],loc:"Base del occipital, en la depresión entre el esternocleidomastoideo y el trapecio.",ind:"Cervicalgia, cefalea tensional, rigidez de nuca.",prec:"Presiona en dirección al ojo contrario. En punción, orienta la aguja hacia la punta de la nariz y nunca hacia medial y craneal."},
+ BL10:{c:"BL10",n:"Tianzhu",es:"Pilar celeste",fig:"cuello",xy:[[88,76],[112,76]],loc:"1,3 cun lateral a la línea media, en el borde lateral del trapecio a la altura de la línea del cabello posterior.",ind:"Rigidez cervical y dolor occipital.",prec:"Sin presión profunda hacia medial."},
+ JiajiC:{c:"Jiaji C",n:"Jiaji cervicales",es:"Paravertebrales C4–C6",fig:"cuello",xy:[[91,104],[109,104]],loc:"0,5 cun lateral al borde inferior de las espinosas de C4 a C6.",ind:"Dolor cervical segmentario y radicular.",prec:"Punción perpendicular y poco profunda."},
+ GV14:{c:"GV14",n:"Dazhui",es:"Gran vértebra",fig:"cuello",xy:[[100,138]],loc:"En la línea media, bajo la apófisis espinosa de C7.",ind:"Rigidez de la charnela cervicodorsal.",prec:""},
+ GB21:{c:"GB21",n:"Jianjing",es:"Pozo del hombro",fig:"cuello",xy:[[48,152],[152,152]],loc:"Punto medio entre C7 y el acromion, en el punto más alto del trapecio superior.",ind:"Tensión del trapecio, cervicalgia, dolor de hombro.",prec:"Contraindicado en embarazo. En punción, nunca perpendicular profunda (riesgo de neumotórax): oblicua y superficial."},
+ SI3:{c:"SI3",n:"Houxi",es:"Arroyo posterior",fig:"mano",xy:[[103,270]],loc:"Con el puño cerrado, en el borde cubital de la mano, al final del pliegue palmar distal, proximal a la 5ª metacarpofalángica.",ind:"Cervicalgia aguda y rigidez de nuca; también lumbalgia.",prec:"Estimula mientras el paciente mueve el cuello."},
+ Luozhen:{c:"EX-UE8",n:"Luozhen",es:"Punto de la tortícolis",fig:"mano",xy:[[70,266]],loc:"Dorso de la mano, entre el 2º y 3º metacarpianos, 0,5 cun proximal a las metacarpofalángicas.",ind:"Tortícolis aguda y bloqueo cervical.",prec:"Presión firme mientras el paciente rota el cuello lentamente."},
+ TE5:{c:"TE5",n:"Waiguan",es:"Barrera externa",fig:"mano",xy:[[75,176]],loc:"2 cun proximal al pliegue dorsal de la muñeca, entre radio y cúbito.",ind:"Dolor cervical lateral, muñeca y codo.",prec:""},
+ LI4:{c:"LI4",n:"Hegu",es:"Valle unido",fig:"mano",xy:[[54,246]],loc:"Dorso de la mano, entre el 1º y 2º metacarpianos, en el punto medio del 2º metacarpiano por su lado radial.",ind:"Analgesia general, dolor de cuello, cara y miembro superior.",prec:"Contraindicado en embarazo."},
+ LI5:{lo:[-32,0],c:"LI5",n:"Yangxi",es:"Arroyo del yang",fig:"mano",xy:[[55,210]],loc:"Extremo radial del pliegue dorsal de la muñeca, en la tabaquera anatómica.",ind:"Dolor radial de muñeca, De Quervain.",prec:"Presión suave si hay sospecha de lesión de escafoides."},
+ TE4:{lo:[-14,12],c:"TE4",n:"Yangchi",es:"Estanque del yang",fig:"mano",xy:[[80,210]],loc:"Pliegue dorsal de la muñeca, en la depresión cubital al tendón del extensor común de los dedos.",ind:"Dolor y rigidez dorsal de muñeca.",prec:""},
+ SI5:{c:"SI5",n:"Yanggu",es:"Valle del yang",fig:"mano",xy:[[97,210]],loc:"Borde cubital de la muñeca, en la depresión entre la estiloides cubital y el piramidal.",ind:"Dolor cubital de muñeca.",prec:""},
+ SI4:{c:"SI4",n:"Wangu",es:"Hueso de la muñeca",fig:"mano",xy:[[102,228]],loc:"Borde cubital de la mano, en la depresión entre la base del 5º metacarpiano y el ganchoso.",ind:"Dolor cubital de muñeca y mano.",prec:""},
+ PC6:{c:"PC6",n:"Neiguan",es:"Barrera interna",fig:"mano",xy:[[240,176]],loc:"2 cun proximal al pliegue palmar de la muñeca, entre los tendones del palmar largo y del flexor radial del carpo.",ind:"Túnel carpiano, dolor de muñeca; también náuseas y ansiedad.",prec:"Sobre el nervio mediano: presión suave, sin provocar hormigueo."},
+ PC7:{lo:[-14,12],c:"PC7",n:"Daling",es:"Gran colina",fig:"mano",xy:[[240,210]],loc:"Punto medio del pliegue palmar de la muñeca, entre el palmar largo y el flexor radial del carpo.",ind:"Túnel carpiano y dolor palmar de muñeca.",prec:"Directamente sobre el túnel carpiano: presión suave."},
+ HT7:{lo:[-33,0],c:"HT7",n:"Shenmen",es:"Puerta del espíritu",fig:"mano",xy:[[224,210]],loc:"Pliegue palmar de la muñeca, en el borde radial del tendón del flexor cubital del carpo.",ind:"Dolor cubital de muñeca; también insomnio y ansiedad.",prec:""},
+ LU9:{c:"LU9",n:"Taiyuan",es:"Gran abismo",fig:"mano",xy:[[257,210]],loc:"Pliegue palmar de la muñeca, en el lado radial de la arteria radial.",ind:"Dolor radial de muñeca.",prec:"No comprimas la arteria radial."},
+ LI11:{c:"LI11",n:"Quchi",es:"Estanque de la curva",fig:"mano",xy:[[48,30]],loc:"Con el codo a 90°, en el extremo lateral del pliegue del codo, a medio camino entre LU5 y el epicóndilo lateral.",ind:"Codo de tenista, dolor del miembro superior.",prec:""},
+ LI10:{c:"LI10",n:"Shousanli",es:"Tres distancias del brazo",fig:"mano",xy:[[54,62]],loc:"2 cun distal a LI11, en la línea que une LI5 con LI11.",ind:"Codo de tenista; suele estar muy sensible.",prec:""},
+ LI12:{c:"LI12",n:"Zhouliao",es:"Hueco del codo",fig:"mano",xy:[[42,14]],loc:"1 cun proximal y lateral a LI11, en el borde anterior del húmero.",ind:"Dolor lateral del codo.",prec:""},
+ Ashi:{c:"Ashi",n:"Ashi",es:"Puntos dolorosos del epicóndilo",fig:"mano",xy:[[60,22]],r:9,loc:"Puntos dolorosos a la palpación alrededor del epicóndilo lateral y del origen del extensor común.",ind:"Codo de tenista.",prec:"Si ha habido infiltración reciente, consulta antes de pinchar la zona."},
+ LU5:{c:"LU5",n:"Chize",es:"Pantano del codo",fig:"mano",xy:[[262,28]],loc:"Pliegue del codo, en el borde radial del tendón del bíceps.",ind:"Dolor del codo y del antebrazo.",prec:""},
+ Yaotongdian:{c:"EX-UE7",n:"Yaotongdian",es:"Puntos de la lumbalgia",fig:"mano",xy:[[66,244],[90,244]],loc:"Dorso de la mano, dos puntos: entre 2º y 3º y entre 4º y 5º metacarpianos, a medio camino entre el pliegue de la muñeca y las metacarpofalángicas.",ind:"Lumbalgia aguda.",prec:"Estimula mientras el paciente mueve la zona lumbar."},
+ BL23:{c:"BL23",n:"Shenshu",es:"Punto shu del riñón",fig:"post",xy:[[101,176],[119,176]],loc:"1,5 cun lateral al borde inferior de la espinosa de L2.",ind:"Lumbalgia crónica y debilidad lumbar.",prec:"Presión moderada, sin percusión sobre la fosa renal."},
+ GV4:{c:"GV4",n:"Mingmen",es:"Puerta de la vida",fig:"post",xy:[[110,176]],loc:"Línea media, bajo la espinosa de L2.",ind:"Lumbalgia y rigidez lumbar.",prec:""},
+ BL52:{c:"BL52",n:"Zhishi",es:"Morada de la voluntad",fig:"post",xy:[[89,176],[131,176]],loc:"3 cun lateral al borde inferior de la espinosa de L2.",ind:"Lumbalgia y tensión del cuadrado lumbar.",prec:""},
+ JiajiL:{c:"Jiaji L",n:"Huatuo Jiaji lumbares",es:"Paravertebrales L3–L5",fig:"post",xy:[[105,194],[115,194]],loc:"0,5 cun lateral al borde inferior de las espinosas de L3 a L5.",ind:"Lumbalgia segmentaria y ciática.",prec:"Punción perpendicular o ligeramente medial."},
+ BL25:{c:"BL25",n:"Dachangshu",es:"Punto shu del intestino grueso",fig:"post",xy:[[101,204],[119,204]],loc:"1,5 cun lateral al borde inferior de la espinosa de L4.",ind:"Lumbalgia baja y ciática.",prec:""},
+ BL54:{lo:[-6,-8],c:"BL54",n:"Zhibian",es:"Orden inferior",fig:"post",xy:[[96,226],[124,226]],loc:"3 cun lateral al hiato sacro, a la altura del 4º agujero sacro posterior.",ind:"Dolor glúteo y ciática.",prec:""},
+ GB30:{c:"GB30",n:"Huantiao",es:"Salto en círculo",fig:"post",xy:[[78,232],[142,232]],loc:"En decúbito lateral con la cadera flexionada: unión del tercio lateral y los dos tercios mediales de la línea entre el trocánter mayor y el hiato sacro.",ind:"Ciática, dolor glúteo y de cadera.",prec:"Sobre el trayecto del ciático: en punción, si aparece una descarga intensa, retira y redirige."},
+ BL36:{c:"BL36",n:"Chengfu",es:"Sostén",fig:"post",xy:[[90,258],[130,258]],loc:"Punto medio del pliegue glúteo.",ind:"Ciática con dolor posterior del muslo.",prec:""},
+ BL37:{c:"BL37",n:"Yinmen",es:"Puerta de la abundancia",fig:"post",xy:[[91,296],[129,296]],loc:"6 cun distal a BL36, en la línea entre BL36 y BL40.",ind:"Ciática y dolor de isquiotibiales.",prec:""},
+ BL40:{c:"BL40",n:"Weizhong",es:"Centro del pliegue",fig:"post",xy:[[92,336],[128,336]],loc:"Punto medio del pliegue poplíteo.",ind:"Punto distal clásico de la lumbalgia y la ciática.",prec:"Arteria poplítea: presión moderada. Nunca sobre varices o con sospecha de trombosis."},
+ GB34:{c:"GB34",n:"Yanglingquan",es:"Fuente de la colina del yang",fig:"post",xy:[[83,352],[137,352]],loc:"Depresión anterior e inferior a la cabeza del peroné.",ind:"Ciática con dolor lateral de la pierna, contracturas.",prec:"Cerca del nervio peroneo: sin presión brusca."},
+ BL57:{c:"BL57",n:"Chengshan",es:"Sostén de la montaña",fig:"post",xy:[[93,384],[127,384]],loc:"Entre los dos vientres del gemelo, en el vértice de la V que se forma al poner el pie de puntillas.",ind:"Ciática, calambres y dolor de pantorrilla.",prec:"Suele ser muy sensible: aumenta la presión poco a poco."},
+ BL60:{c:"BL60",n:"Kunlun",es:"Montañas Kunlun",fig:"post",xy:[[84,430],[136,430]],loc:"Depresión entre la punta del maléolo lateral y el tendón de Aquiles.",ind:"Lumbalgia, ciática, rigidez cervical.",prec:"Contraindicado en embarazo."}
+};
+const ACU = {
+ cervical:{t:"Cervicalgia y rigidez de nuca",pts:["GB20","BL10","GV14","GB21","SI3","Luozhen","TE5","LI4"],pauta:"Paciente sentado o en prono. Trabaja GB20 y BL10 con los pulgares en dirección craneal, después GV14 y GB21. Termina con los puntos distales (SI3 y Luozhen) mientras el paciente rota el cuello despacio."},
+ lumbar:{t:"Lumbalgia",pts:["BL23","GV4","BL52","BL25","JiajiL","BL40","Yaotongdian","BL60"],pauta:"Paciente en prono con una almohada bajo el abdomen. Recorre BL23, BL52 y BL25 de forma bilateral, presiona los Jiaji en el segmento doloroso y termina con BL40 y BL60. En dolor agudo, estimula Yaotongdian con el paciente de pie moviendo la zona lumbar."},
+ ciatica:{t:"Ciática",pts:["BL25","JiajiL","BL54","GB30","BL36","BL37","BL40","GB34","BL57","BL60"],pauta:"Sigue el trayecto del dolor de proximal a distal en el lado afectado. Dolor posterior (S1): BL36, BL37, BL40 y BL57. Dolor lateral (L5): GB30 y GB34. Termina con BL60."},
+ muneca:{t:"Muñeca",pts:["PC7","PC6","HT7","LU9","LI5","TE4","SI5","SI4","TE5","LI4"],pauta:"Elige los puntos según la zona del dolor: palmar (PC6, PC7, HT7, LU9), radial (LI5, LI4), dorsal (TE4, TE5) o cubital (SI4, SI5). En túnel carpiano, presión suave sobre PC6 y PC7 sin provocar hormigueo."}
+};
+const EA = {
+ "ea-cerv":{t:"Cervicalgia",pts:["GB20","BL10","JiajiC","GB21","SI3","Luozhen","TE5","LI4"],pairs:[["GB20","JiajiC","Mismo lado; un canal por lado si el dolor es bilateral"],["BL10","GB21","Mismo lado; GB21 siempre oblicuo y superficial"]],freq:"2/100 Hz alternante",alt:"100 Hz si es agudo con espasmo; 2 Hz si es crónico",int:"Hormigueo claro y cómodo, sin contracción dolorosa",dur:"20–30 min",ses:"2–3 por semana, 6–10 sesiones",manual:["SI3","Luozhen","TE5","LI4"],nota:"Nunca coloques pares que crucen la cara anterior del cuello ni que pasen de un lado al otro del cuello.",q:"electroacupuncture neck pain randomized"},
+ "ea-codo":{t:"Codo de tenista",pts:["Ashi","LI11","LI10","LI12","TE5","LI4"],pairs:[["LI11","LI10","Siguiendo el extensor común"],["Ashi","LI12","Rodeando el epicóndilo"]],freq:"2 Hz o 2/100 Hz",alt:"2 Hz favorece la analgesia prolongada",int:"Hormigueo cómodo; puede verse una ligera contracción de los extensores",dur:"20 min",ses:"2 por semana, 6–8 sesiones",manual:["TE5","LI4"],nota:"Combínalo siempre con ejercicio de carga progresiva del extensor común.",q:"acupuncture lateral epicondylitis"},
+ "ea-lumb":{t:"Lumbalgia",pts:["BL23","BL25","JiajiL","BL52","GV4","BL40","Yaotongdian"],pairs:[["BL23","BL25","Mismo lado; un canal por lado si el dolor es central"],["BL52","JiajiL","Mismo lado, en el segmento doloroso"]],freq:"2/100 Hz alternante",alt:"2 Hz en lumbalgia crónica",int:"Hormigueo claro y cómodo",dur:"20–30 min",ses:"2 por semana, 8–10 sesiones",manual:["BL40","Yaotongdian"],nota:"Al final de la sesión, estimula Yaotongdian con el paciente de pie moviendo la zona lumbar.",q:"electroacupuncture chronic low back pain"},
+ "ea-ciat":{t:"Ciática",uni:true,pts:["JiajiL","BL25","BL54","GB30","GB34","BL36","BL37","BL57","BL40","BL60"],pairs:[["JiajiL","BL54","Raíz nerviosa con región glútea"],["GB30","GB34","Trayecto lateral (dolor en territorio L5)"],["BL36","BL57","Trayecto posterior (S1); puedes usar BL37 en lugar de BL36"]],freq:"2/100 Hz alternante",alt:"2 Hz para analgesia prolongada",int:"Hormigueo cómodo; si aparece una descarga hacia el pie, baja la intensidad",dur:"20–30 min",ses:"2–3 por semana, 8–10 sesiones",manual:["BL40","BL60"],nota:"Trabaja solo el lado afectado y elige el par lateral o posterior según el dermatoma del dolor. Con déficit neurológico progresivo o síntomas de cola de caballo, no trates y deriva.",q:"acupuncture sciatica randomized"}
+};
+const PT_REGION = {cervical:{acu:["cervical"],ea:["ea-cerv"],rf:"cerv"},trapecio:{acu:["cervical"],ea:["ea-cerv"],rf:"hombro"},lumbar:{acu:["lumbar","ciatica"],ea:["ea-lumb","ea-ciat"],rf:"lumb"},muneca:{acu:["muneca"]},codo:{ea:["ea-codo"],rf:"codo"},hombro:{rf:"hombro"},rodilla:{rf:"rodilla"},cadera:{rf:"ciat"}};
+
+/* ---------- reflexología ---------- */
+const RFV = {
+ plantar:{t:"Planta",vb:"0 0 180 400",mir:true,sil:`<ellipse class="sil" cx="48" cy="62" rx="24" ry="30"/><ellipse class="sil" cx="88" cy="52" rx="13" ry="17"/><ellipse class="sil" cx="114" cy="58" rx="12" ry="15"/><ellipse class="sil" cx="136" cy="70" rx="11" ry="14"/><ellipse class="sil" cx="155" cy="88" rx="10" ry="12"/><path class="sil" d="M34 98 C22 120 20 160 34 196 C46 226 50 262 42 300 C34 338 44 386 92 390 C138 392 150 356 146 318 C142 276 150 226 158 176 C164 140 168 112 162 100 C150 92 120 94 92 94 C66 94 44 92 34 98 Z"/>`},
+ dorsal:{t:"Dorso",vb:"0 0 180 360",mir:true,sil:`<ellipse class="sil" cx="48" cy="62" rx="24" ry="30"/><ellipse class="sil" cx="88" cy="52" rx="13" ry="17"/><ellipse class="sil" cx="114" cy="58" rx="12" ry="15"/><ellipse class="sil" cx="136" cy="70" rx="11" ry="14"/><ellipse class="sil" cx="155" cy="88" rx="10" ry="12"/><path class="sil" d="M30 96 C24 130 34 180 50 230 C58 260 60 290 62 330 L122 330 C124 290 128 262 136 236 C150 190 166 140 164 104 C150 94 120 96 92 96 C64 96 42 92 30 96 Z"/><rect class="sil" x="62" y="328" width="60" height="30"/>`},
+ interno:{t:"Lateral interno",vb:"0 0 320 180",mir:false,sil:`<path class="sil" d="M44 150 C26 148 22 122 36 104 L58 62 L64 14 L116 14 L118 70 C150 84 214 108 268 122 C296 128 306 146 292 156 C264 162 236 160 214 156 C184 140 130 136 96 150 C76 160 56 158 44 150 Z"/><circle class="guide" cx="98" cy="74" r="8"/><text class="lbl" x="250" y="176">dedo gordo →</text><text class="lbl" x="6" y="176">← talón</text>`},
+ externo:{t:"Lateral externo",vb:"0 0 320 180",mir:false,sil:`<path class="sil" d="M276 150 C294 148 298 122 284 104 L262 62 L256 14 L204 14 L202 70 C170 84 106 108 52 122 C24 128 14 146 28 156 C80 162 200 162 276 150 Z"/><circle class="guide" cx="222" cy="74" r="8"/><text class="lbl" x="6" y="176">← 5º dedo</text><text class="lbl" x="262" y="176">talón →</text>`}
+};
+/* shapes: e cx cy rx ry | c cx cy r | p "d" (línea gruesa) */
+const RZ = [
+ {n:"Cabeza y cerebro",v:"plantar",s:[["e",48,48,16,13]],d:"Pulpejo del dedo gordo.",tags:["estres"]},
+ {n:"Hipófisis",v:"plantar",s:[["c",48,66,5]],d:"Centro del pulpejo del dedo gordo.",tags:["estres"]},
+ {n:"Senos paranasales",v:"plantar",s:[["c",88,44,7],["c",114,50,6],["c",136,63,6],["c",155,82,5]],d:"Yemas de los dedos 2º a 5º.",tags:[]},
+ {n:"Cuello y garganta",v:"plantar",s:[["e",48,88,20,6]],d:"Base del dedo gordo. Rodéala con el pulgar.",tags:["cerv"]},
+ {n:"Ojos",v:"plantar",s:[["e",100,80,12,4]],d:"Base de los dedos 2º y 3º.",tags:[]},
+ {n:"Oídos",v:"plantar",s:[["e",144,92,13,4]],d:"Base de los dedos 4º y 5º.",tags:[]},
+ {n:"Trapecio y hombros",v:"plantar",s:[["e",118,106,38,5]],d:"Banda bajo la base de los dedos 2º a 5º.",tags:["cerv","hombro"]},
+ {n:"Tiroides",v:"plantar",s:[["e",46,118,16,10]],d:"Eminencia del dedo gordo, en su curva.",tags:[]},
+ {n:"Pulmones y bronquios",v:"plantar",s:[["e",110,132,40,16]],d:"Almohadilla metatarsal bajo los dedos 2º a 5º.",tags:[]},
+ {n:"Corazón",v:"plantar",foot:"L",s:[["e",76,140,13,9]],d:"Solo en el pie izquierdo, en la almohadilla metatarsal.",tags:["estres"]},
+ {n:"Hombro",v:"plantar",s:[["c",158,124,8]],d:"Borde externo, bajo el 5º dedo.",tags:["hombro","cerv"]},
+ {n:"Diafragma y plexo solar",v:"plantar",s:[["e",96,160,62,4],["c",92,160,7]],d:"Línea bajo la almohadilla metatarsal; el plexo solar en su centro. Presión mantenida para relajar.",tags:["estres","digest"]},
+ {n:"Hígado",v:"plantar",foot:"R",s:[["e",122,186,30,17]],d:"Solo en el pie derecho, mitad externa bajo el diafragma.",tags:["digest"]},
+ {n:"Vesícula biliar",v:"plantar",foot:"R",s:[["c",128,196,6]],d:"Solo en el pie derecho, dentro de la zona del hígado.",tags:["digest"]},
+ {n:"Bazo",v:"plantar",foot:"L",s:[["e",132,188,16,12]],d:"Solo en el pie izquierdo, mitad externa bajo el diafragma.",tags:["digest"]},
+ {n:"Estómago",v:"plantar",s:[["e",64,182,18,12]],d:"Mitad interna bajo el diafragma; más amplio en el pie izquierdo.",tags:["digest"]},
+ {n:"Páncreas",v:"plantar",s:[["e",72,200,14,5]],d:"Bajo el estómago, en la mitad interna.",tags:["digest"]},
+ {n:"Suprarrenal",v:"plantar",s:[["c",92,193,5]],d:"Sobre el riñón.",tags:["estres"]},
+ {n:"Riñón",v:"plantar",s:[["e",94,212,10,13]],d:"Centro del arco.",tags:[]},
+ {n:"Uréter",v:"plantar",s:[["p","M90 226 L62 258"]],d:"Línea del riñón a la vejiga.",tags:[]},
+ {n:"Vejiga",v:"plantar",s:[["e",58,266,12,9]],d:"Borde interno, al final del arco.",tags:[]},
+ {n:"Colon transverso",v:"plantar",s:[["e",100,236,42,5]],d:"Banda horizontal en el centro del arco.",tags:["digest"]},
+ {n:"Colon ascendente",v:"plantar",foot:"R",s:[["e",136,252,8,34]],d:"Solo en el pie derecho, borde externo.",tags:["digest"]},
+ {n:"Válvula ileocecal",v:"plantar",foot:"R",s:[["c",136,292,6]],d:"Solo en el pie derecho, delante del talón por el borde externo.",tags:["digest"]},
+ {n:"Colon descendente",v:"plantar",foot:"L",s:[["e",136,252,8,34]],d:"Solo en el pie izquierdo, borde externo.",tags:["digest"]},
+ {n:"Colon sigmoide",v:"plantar",foot:"L",s:[["e",104,298,30,5]],d:"Solo en el pie izquierdo, delante del talón.",tags:["digest"]},
+ {n:"Intestino delgado",v:"plantar",s:[["e",102,272,28,18]],d:"Parte baja del arco.",tags:["digest"]},
+ {n:"Nervio ciático",v:"plantar",s:[["e",94,316,48,5]],d:"Banda transversal en la parte anterior del talón.",tags:["ciat","lumb"]},
+ {n:"Pelvis y zona lumbosacra",v:"plantar",s:[["e",94,354,38,24]],d:"Talón. Trabájalo con más presión: la piel es gruesa.",tags:["lumb","ciat"]},
+ {n:"Dientes y mandíbula",v:"dorsal",s:[["e",48,60,13,6],["e",88,52,8,4],["e",114,58,7,4],["e",136,70,6,4],["e",155,88,5,3]],d:"Cara dorsal de los dedos.",tags:[]},
+ {n:"Cara y senos frontales",v:"dorsal",s:[["e",48,40,12,8]],d:"Dorso del dedo gordo.",tags:[]},
+ {n:"Linfáticos del cuello",v:"dorsal",s:[["c",70,96,5],["c",101,90,4],["c",126,96,4],["c",146,106,4]],d:"Espacios entre los dedos.",tags:["cerv"]},
+ {n:"Tórax, mamas y pulmones",v:"dorsal",s:[["e",96,140,50,24]],d:"Dorso de los metatarsianos.",tags:[]},
+ {n:"Hombro y escápula",v:"dorsal",s:[["e",146,150,8,18]],d:"Borde dorsal externo, sobre el 4º y 5º metatarsianos.",tags:["hombro","cerv"]},
+ {n:"Diafragma",v:"dorsal",s:[["e",98,182,56,5]],d:"Línea transversal en mitad del dorso.",tags:["estres"]},
+ {n:"Ingle y linfáticos pélvicos",v:"dorsal",s:[["e",92,318,34,6]],d:"Banda en el pliegue del tobillo; incluye trompas o conducto deferente.",tags:[]},
+ {n:"Columna cervical",v:"interno",s:[["p","M292 148 L262 146"]],d:"Borde interno del dedo gordo.",tags:["cerv"]},
+ {n:"Columna dorsal",v:"interno",s:[["p","M262 146 C240 146 222 144 206 140"]],d:"Borde interno del 1º metatarsiano.",tags:["cerv"]},
+ {n:"Columna lumbar",v:"interno",s:[["p","M206 140 C180 132 140 130 112 138"]],d:"Borde interno del arco (cuñas y escafoides).",tags:["lumb","ciat"]},
+ {n:"Sacro y cóccix",v:"interno",s:[["p","M112 138 C90 146 64 148 46 140"]],d:"Borde interno del talón.",tags:["lumb","ciat"]},
+ {n:"Vejiga (vista interna)",v:"interno",s:[["e",118,124,12,6]],d:"Zona blanda sobre el arco, delante del talón.",tags:[]},
+ {n:"Útero o próstata",v:"interno",s:[["c",66,112,8]],d:"A medio camino entre el maléolo interno y la parte posterior del talón.",tags:[]},
+ {n:"Recto y nervio ciático (trayecto interno)",v:"interno",s:[["p","M44 118 L60 22"]],d:"Detrás del maléolo interno, subiendo por la pierna.",tags:["ciat"]},
+ {n:"Hombro (vista externa)",v:"externo",s:[["c",52,142,9]],d:"Cabeza del 5º metatarsiano.",tags:["hombro","cerv"]},
+ {n:"Escápula y trapecio",v:"externo",s:[["e",84,124,16,5]],d:"Borde dorsal externo, sobre el 5º metatarsiano.",tags:["hombro","cerv"]},
+ {n:"Brazo",v:"externo",s:[["e",86,146,20,6]],d:"A lo largo del 5º metatarsiano.",tags:["codo"]},
+ {n:"Codo",v:"externo",s:[["c",118,150,8]],d:"Base del 5º metatarsiano (apófisis estiloides).",tags:["codo"]},
+ {n:"Rodilla y pierna",v:"externo",s:[["e",158,148,18,8]],d:"Zona del cuboides, delante del talón.",tags:["rodilla"]},
+ {n:"Cadera",v:"externo",s:[["e",226,98,20,7]],d:"Bajo el maléolo externo.",tags:["ciat","lumb"]},
+ {n:"Ovario o testículo",v:"externo",s:[["c",252,118,8]],d:"A medio camino entre el maléolo externo y la parte posterior del talón.",tags:[]},
+ {n:"Nervio ciático (trayecto externo)",v:"externo",s:[["p","M276 122 L262 22"]],d:"Detrás del maléolo externo, subiendo por la pierna.",tags:["ciat"]}
+];
+const RF_HL = [["","Sin resaltar"],["cerv","Cervicalgia"],["lumb","Lumbalgia"],["ciat","Ciática"],["hombro","Hombro"],["codo","Codo y brazo"],["rodilla","Rodilla"],["digest","Digestivo"],["estres","Estrés y sueño"]];
+
+/* ---------- estado y dibujo ---------- */
+let ptState = {tab:"acu", acu:"cervical", sel:null, ea:"ea-cerv", rf:{view:"plantar", foot:"R", hl:"cerv", sel:null}};
+function figSVG(fig, ids, sel, pairs, uni){
+  const F=FIGS[fig]; let lines="", dots="";
+  (pairs||[]).forEach(([a,b])=>{ const A=PT[a],B=PT[b]; if(A.fig!==fig||B.fig!==fig) return;
+    const n=Math.max(A.xy.length,B.xy.length);
+    for(let i=0;i<n;i++){ if(uni && n>1 && i===0) continue; const p1=A.xy[Math.min(i,A.xy.length-1)], p2=B.xy[Math.min(i,B.xy.length-1)];
+      lines+=`<line class="pair" x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}"/>`; } });
+  ids.filter(id=>PT[id].fig===fig).forEach(id=>{ const p=PT[id], on=id===sel;
+    const pts = (uni && p.xy.length>1) ? [p.xy[1]] : p.xy;
+    pts.forEach((xy,i)=>{
+      if(p.r) dots+=`<circle class="ashi" cx="${xy[0]}" cy="${xy[1]}" r="${p.r}" data-pt="${id}"/>`;
+      dots+=`<circle class="pt ${on?"on":""}" cx="${xy[0]}" cy="${xy[1]}" r="${on?6:4}" data-pt="${id}"><title>${esc(p.c+" "+p.n)}</title></circle>`;
+      if(i===pts.length-1){ const lo=p.lo||[0,0]; dots+=`<text x="${xy[0]+7+lo[0]}" y="${xy[1]+3+lo[1]}" class="${on?"on":""}">${esc(p.c)}</text>`; } }); });
+  return `<svg viewBox="${F.vb}" role="img" aria-label="${esc(F.t)}">${F.sil}${lines}${dots}</svg>`;
+}
+function ptCard(id){
+  const p=PT[id], on=id===ptState.sel;
+  return `<div class="ptc ${on?"on":""}" data-ptc="${id}"><h4><span class="ptcode">${esc(p.c)}</span> ${esc(p.n)} <span class="note">· ${esc(p.es)}</span></h4>
+    <dl class="kv"><dt>Localización</dt><dd>${esc(p.loc)}</dd><dt>Indicación</dt><dd>${esc(p.ind)}</dd>${p.prec?`<dt>Precaución</dt><dd>${esc(p.prec)}</dd>`:""}</dl>
+    <p class="note" style="margin:4px 0 0"><a href="${yt("punto "+p.c+" "+p.n+" localización")}" target="_blank" rel="noopener">Ver localización en YouTube</a></p></div>`;
+}
+function zoneShape(s, cls){
+  if(s[0]==="e") return `<ellipse class="${cls}" cx="${s[1]}" cy="${s[2]}" rx="${s[3]}" ry="${s[4]}"/>`;
+  if(s[0]==="c") return `<circle class="${cls}" cx="${s[1]}" cy="${s[2]}" r="${s[3]}"/>`;
+  return `<path class="${cls.replace("rz","rzl")}" d="${s[1]}"/>`;
+}
+function zoneCenter(s){ if(s[0]!=="p") return [s[1],s[2]]; const n=s[1].match(/-?\d+(\.\d+)?/g).map(Number); return [(n[0]+n[n.length-2])/2,(n[1]+n[n.length-1])/2]; }
+function rfZones(){ const r=ptState.rf; return RZ.map((z,i)=>({...z,i})).filter(z=>z.v===r.view && (!z.foot || z.foot===r.foot)); }
+function footSVG(){
+  const r=ptState.rf, V=RFV[r.view], w=+V.vb.split(" ")[2], mir=V.mir && r.foot==="L";
+  const zs=rfZones(); let shapes="", nums="";
+  zs.forEach((z,k)=>{ const cls="rz"+(r.hl&&z.tags.includes(r.hl)?" hl":"")+(r.sel===z.i?" on":"");
+    shapes+=`<g data-rz="${z.i}"><title>${esc(z.n)}</title>${z.s.map(s=>zoneShape(s,cls)).join("")}</g>`;
+    const [cx,cy]=zoneCenter(z.s[0]); nums+=`<text class="rznum" x="${mir?w-cx:cx}" y="${cy+3}">${k+1}</text>`; });
+  return `<svg viewBox="${V.vb}" role="img" aria-label="Reflexología podal, ${esc(V.t)}"><g ${mir?`transform="translate(${w} 0) scale(-1 1)"`:""}>${V.sil}${shapes}</g>${nums}</svg>`;
+}
+
+/* ---------- vistas ---------- */
+function renderPuntos(){
+  const tabs=[["acu","Acupresión shiatsu"],["rf","Reflexología podal"],["ea","Electroacupuntura"]];
+  $("#pt-tabs").innerHTML=tabs.map(([k,l])=>`<button role="tab" aria-selected="${ptState.tab===k}" data-pttab="${k}">${l}</button>`).join("");
+  $("#pt-tabs").querySelectorAll("[data-pttab]").forEach(b=>b.addEventListener("click",()=>{ptState.tab=b.dataset.pttab;ptState.sel=null;renderPuntos()}));
+  $("#pt-body").innerHTML = ptState.tab==="acu"?vAcu():ptState.tab==="rf"?vRf():vEa();
+  bindPuntos();
+}
+function vAcu(){
+  const C=ACU[ptState.acu], figs=[...new Set(C.pts.map(id=>PT[id].fig))];
+  return `<div class="zonelist" style="justify-content:flex-start;margin:0">${Object.entries(ACU).map(([k,a])=>`<button class="chip" aria-pressed="${ptState.acu===k}" data-acu="${k}">${a.t}</button>`).join("")}</div>
+   <div class="grid2"><div class="panel ptfig">${figs.map(f=>`<figure><figcaption class="eyebrow">${FIGS[f].t}</figcaption>${figSVG(f,C.pts,ptState.sel)}</figure>`).join("")}</div>
+    <div class="panel"><span class="eyebrow">${C.pts.length} puntos</span><h2>${C.t}</h2><p class="note">${esc(C.pauta)}</p><div style="margin-top:8px">${C.pts.map(ptCard).join("")}</div></div></div>
+   <div class="panel"><h2>Técnica de presión</h2><div class="cols" style="margin-top:8px">
+    <div><h3>Cómo presionar</h3><ul><li>Presión perpendicular con la yema del pulgar, sin deslizar sobre la piel.</li><li>Entra durante la espiración del paciente, mantén 5–7 s y suelta despacio. Repite 3–5 veces por punto.</li><li>En puntos muy sensibles, presión mantenida de 30 a 60 s hasta que el dolor ceda.</li><li>Intensidad: dolor tolerable, entre 3 y 5 sobre 10.</li><li>En dolor unilateral, empieza por el lado sano y luego trabaja el afectado.</li></ul></div>
+    <div><h3>Precauciones</h3><ul><li>Embarazo: no estimules LI4, GB21, BL60 ni SP6.</li><li>Presión suave con anticoagulación, osteoporosis o fragilidad cutánea.</li><li>No presiones sobre varices, piel lesionada o zonas inflamadas.</li><li>Con sospecha de trombosis venosa, no trabajes la pierna y deriva.</li></ul></div></div>
+    <p class="note">La localización se mide en cun: 1 cun es la anchura de la articulación interfalángica del pulgar del paciente; 3 cun, la anchura de sus cuatro dedos juntos. Evidencia: <a href="${pm("acupressure musculoskeletal pain systematic review")}" target="_blank" rel="noopener">acupresión en dolor musculoesquelético (PubMed)</a>.</p></div>`;
+}
+function vRf(){
+  const r=ptState.rf, zs=rfZones(), sz=r.sel!=null?RZ[r.sel]:null;
+  return `<div class="row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+     <div class="zonelist" style="justify-content:flex-start;margin:0">${Object.entries(RFV).map(([k,v])=>`<button class="chip" aria-pressed="${r.view===k}" data-rfv="${k}">${v.t}</button>`).join("")}</div>
+     <div class="zonelist" style="justify-content:flex-start;margin:0"><button class="chip" aria-pressed="${r.foot==="R"}" data-rff="R">Pie derecho</button><button class="chip" aria-pressed="${r.foot==="L"}" data-rff="L">Pie izquierdo</button></div></div>
+   <div class="filters"><label for="rf-hl">Resaltar zonas para<select id="rf-hl">${RF_HL.map(([k,l])=>`<option value="${k}" ${r.hl===k?"selected":""}>${l}</option>`).join("")}</select></label>
+     <span class="note">${RFV[r.view].mir?"La vista se invierte al cambiar de pie.":"Las vistas laterales son iguales en ambos pies."}</span></div>
+   <div class="grid2"><div class="panel ptfig"><figure><figcaption class="eyebrow">${RFV[r.view].t} · pie ${r.foot==="R"?"derecho":"izquierdo"}</figcaption>${footSVG()}</figure></div>
+    <div class="panel">${sz?`<div class="ptc on" style="margin:0 0 12px"><h4>${esc(sz.n)}</h4><p style="margin:4px 0 0">${esc(sz.d)}</p></div>`:`<p class="note" style="margin-top:0">Toca una zona del pie o de la lista para ver su localización.</p>`}
+     <ol class="zlist">${zs.map((z,k)=>`<li><button data-rzl="${z.i}" class="${r.hl&&z.tags.includes(r.hl)?"hl":""} ${r.sel===z.i?"on":""}"><span class="num">${k+1}</span><span>${esc(z.n)}</span></button></li>`).join("")}</ol></div></div>
+   <div class="panel"><h2>Cómo trabajar</h2><div class="cols" style="margin-top:8px">
+    <div><h3>Técnica</h3><ul><li>Caminar con el pulgar: avanza en pequeños pasos flexionando la falange distal, con presión constante.</li><li>En los puntos reflejos sensibles, presión mantenida o rotatoria de 5 a 10 s.</li><li>Orden habitual: relajación global del pie, columna (vista interna), zona objetivo, y cierre con plexo solar y diafragma.</li><li>Sesión de 30 a 45 min; en tus pacientes, de 5 a 10 min como complemento al final del tratamiento.</li></ul></div>
+    <div><h3>Contraindicaciones</h3><ul><li>Trombosis venosa, flebitis o edema agudo de una pierna.</li><li>Heridas, infecciones (pie de atleta), verrugas o fracturas recientes.</li><li>Gota o artritis aguda del pie.</li><li>Pie diabético con neuropatía o úlcera.</li><li>Primer trimestre de embarazo: evita útero, ovario y presión intensa en el talón.</li></ul></div></div>
+    <p class="note">Las zonas reflejas son un mapa tradicional sin correspondencia anatómica demostrada, y la evidencia de efecto específico es baja: úsala como técnica de relajación y analgesia complementaria, nunca para diagnosticar. <a href="${pm("reflexology systematic review")}" target="_blank" rel="noopener">Revisiones en PubMed</a>.</p></div>`;
+}
+function vEa(){
+  const E=EA[ptState.ea], figs=[...new Set(E.pts.map(id=>PT[id].fig))];
+  const pair=(a,b)=>`<b>${esc(PT[a].c)}</b> ↔ <b>${esc(PT[b].c)}</b>`;
+  return `<div class="warnbar"><b>Solo con formación acreditada:</b> la punción y la electroacupuntura requieren formación específica y que tu práctica profesional lo permita. Si no punciones, puedes aplicar la misma pauta con electroestimulación transcutánea sobre los puntos (TENS con electrodos pequeños).</div>
+   <div class="zonelist" style="justify-content:flex-start;margin:0">${Object.entries(EA).map(([k,e])=>`<button class="chip" aria-pressed="${ptState.ea===k}" data-ea="${k}">${e.t}</button>`).join("")}</div>
+   <div class="grid2"><div class="panel ptfig">${figs.map(f=>`<figure><figcaption class="eyebrow">${FIGS[f].t}${E.uni&&f==="post"?" · lado derecho como ejemplo":""}</figcaption>${figSVG(f,E.pts,ptState.sel,E.pairs.map(p=>[p[0],p[1]]),E.uni)}</figure>`).join("")}
+     <p class="note"><span style="color:var(--heat)">- - -</span> pares conectados al electroestimulador.</p></div>
+    <div class="panel"><span class="eyebrow">Electroacupuntura</span><h2>${E.t}</h2>
+     <div class="spec" style="margin-top:10px"><div><b>${esc(E.freq)}</b><span>Frecuencia. ${esc(E.alt)}</span></div><div><b>${esc(E.dur)}</b><span>Duración de la estimulación</span></div><div><b>${esc(E.ses)}</b><span>Pauta de sesiones</span></div><div><b>Intensidad</b><span>${esc(E.int)}</span></div></div>
+     <h3 style="margin-top:14px">Pares de electrodos</h3><ul class="minilist">${E.pairs.map(p=>`<li>${pair(p[0],p[1])}: ${esc(p[2])}</li>`).join("")}</ul>
+     <h3 style="margin-top:12px">Puntos con estimulación manual</h3><p style="margin:4px 0 0">${E.manual.map(id=>`<button class="linkbtn" data-ptsel="${id}">${esc(PT[id].c)} ${esc(PT[id].n)}</button>`).join(", ")}</p>
+     <p class="note" style="margin-top:10px"><b>Importante:</b> ${esc(E.nota)}</p>
+     <h3 style="margin-top:12px">Puntos del protocolo</h3><div>${E.pts.map(ptCard).join("")}</div>
+     <p class="note"><a href="${pm(E.q)}" target="_blank" rel="noopener">Evidencia en PubMed</a></p></div></div>
+   <div class="panel"><h2>Seguridad en electroacupuntura</h2><div class="cols" style="margin-top:8px">
+    <div><h3>Contraindicaciones</h3><ul><li>Marcapasos, desfibrilador u otro implante electrónico.</li><li>Embarazo (y nunca LI4, GB21, BL60 ni SP6).</li><li>Epilepsia no controlada.</li><li>Piel lesionada o infectada en el punto.</li><li>Trastornos de coagulación o anticoagulación mal controlada.</li></ul></div>
+    <div><h3>Reglas de colocación</h3><ul><li>Nunca hagas pasar la corriente a través del tórax ni de un lado a otro del cuerpo: cada par, en el mismo lado.</li><li>No coloques electrodos en la cara anterior del cuello.</li><li>Conecta tras insertar y obtener la sensación de la aguja; sube la intensidad poco a poco.</li><li>Apaga y desconecta antes de retirar las agujas.</li><li>Paciente tumbado durante toda la sesión, por el riesgo de síncope vasovagal.</li></ul></div></div></div>`;
+}
+function bindPuntos(){
+  const B=$("#pt-body");
+  B.querySelectorAll("[data-acu]").forEach(b=>b.addEventListener("click",()=>{ptState.acu=b.dataset.acu;ptState.sel=null;renderPuntos()}));
+  B.querySelectorAll("[data-ea]").forEach(b=>b.addEventListener("click",()=>{ptState.ea=b.dataset.ea;ptState.sel=null;renderPuntos()}));
+  B.querySelectorAll("[data-pt]").forEach(c=>c.addEventListener("click",()=>{ptState.sel=c.dataset.pt;renderPuntos();const card=B.querySelector(`[data-ptc="${ptState.sel}"]`);if(card)card.scrollIntoView({block:"nearest",behavior:"smooth"})}));
+  B.querySelectorAll("[data-ptc]").forEach(c=>c.addEventListener("click",e=>{if(e.target.closest("a"))return;ptState.sel=c.dataset.ptc;renderPuntos()}));
+  B.querySelectorAll("[data-ptsel]").forEach(c=>c.addEventListener("click",()=>{ptState.sel=c.dataset.ptsel;renderPuntos()}));
+  B.querySelectorAll("[data-rfv]").forEach(b=>b.addEventListener("click",()=>{ptState.rf.view=b.dataset.rfv;ptState.rf.sel=null;renderPuntos()}));
+  B.querySelectorAll("[data-rff]").forEach(b=>b.addEventListener("click",()=>{ptState.rf.foot=b.dataset.rff;ptState.rf.sel=null;renderPuntos()}));
+  const hl=$("#rf-hl"); if(hl) hl.addEventListener("change",()=>{ptState.rf.hl=hl.value;renderPuntos()});
+  B.querySelectorAll("[data-rz],[data-rzl]").forEach(g=>g.addEventListener("click",()=>{ptState.rf.sel=+(g.dataset.rz??g.dataset.rzl);renderPuntos()}));
+}
+function renderPtsTab(reg){
+  const m=PT_REGION[reg]; let h="";
+  if(m.acu) h+=`<h3>Acupresión shiatsu</h3><p style="margin:4px 0 10px">${m.acu.map(k=>`<button class="btnlink" data-gopts="acu:${k}">${esc(ACU[k].t)} · ${ACU[k].pts.length} puntos</button>`).join(" ")}</p>`;
+  if(m.ea) h+=`<h3>Electroacupuntura</h3><p style="margin:4px 0 10px">${m.ea.map(k=>`<button class="btnlink" data-gopts="ea:${k}">${esc(EA[k].t)}</button>`).join(" ")}</p>`;
+  if(m.rf) h+=`<h3>Reflexología podal</h3><p style="margin:4px 0 10px"><button class="btnlink" data-gopts="rf:${m.rf}">Zonas reflejas para ${esc(RF_HL.find(x=>x[0]===m.rf)[1].toLowerCase())}</button></p>`;
+  const pts=[...new Set((m.acu||[]).flatMap(k=>ACU[k].pts))].slice(0,6);
+  if(pts.length) h+=`<h3>Puntos principales</h3><div>${pts.map(id=>`<div class="test"><h4><span class="ptcode">${esc(PT[id].c)}</span> ${esc(PT[id].n)}</h4><p>${esc(PT[id].loc)}</p></div>`).join("")}</div>`;
+  return h;
+}
+function gotoPuntos(v){
+  const [t,k]=v.split(":"); ptState.tab=t; ptState.sel=null;
+  if(t==="acu") ptState.acu=k; if(t==="ea") ptState.ea=k;
+  if(t==="rf"){ ptState.rf.hl=k; ptState.rf.sel=null; ptState.rf.view = ["lumb","ciat"].includes(k)?"interno":["codo","rodilla"].includes(k)?"externo":"plantar"; }
+  renderPuntos(); showView("puntos");
+}
+
 /* ======================= COPIA DE SEGURIDAD ======================= */
 const toB64 = b => new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
 const fromB64 = async d => (await fetch(d)).blob();
@@ -1223,9 +1527,9 @@ if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.s
 
 /* ======================= INICIO ======================= */
 fillFilters(); renderMap(); renderSym(); renderCards(); renderTecar(); renderEvidence(); renderRed();
-renderProtoLib(); renderVisceral(); renderInfantil(); initFormacion(); renderFormacion(); initStorage();
+renderProtoLib(); renderVisceral(); renderInfantil(); renderPuntos(); initFormacion(); renderFormacion(); initStorage();
 const start = (location.hash||"").replace("#","");
-showView(["mapa","sintoma","tecnicas","tecar","visceral","infantil","formacion","cribado"].includes(start)?start:"mapa");
+showView(["mapa","sintoma","tecnicas","tecar","puntos","visceral","infantil","formacion","cribado"].includes(start)?start:"mapa");
 </script>
 
 </body>
